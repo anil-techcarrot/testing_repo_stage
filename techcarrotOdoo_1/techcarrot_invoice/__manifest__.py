@@ -17,6 +17,8 @@
         'reports/payments_template.xml',
         'reports/invoice_ir_actions.xml',
         'reports/invoice_inherit.xml',
+        'reports/credit_note_report.xml',
+        'data/server_action.xml',
         'views/res_bank_view.xml',
         # 'views/sale_order_view.xml',
         'views/account_move_view.xml',

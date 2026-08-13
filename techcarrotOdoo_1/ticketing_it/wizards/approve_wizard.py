@@ -155,17 +155,16 @@ class ItTicketApproveWizard(models.TransientModel):
         # Odoo tries to re-render the ticket form behind it and throws an Access
         # Error, even though the approval itself succeeded. So for HR specifically,
         # redirect back to the "Pending HR Approval" list instead of the record.
+        # ── SAFE REDIRECT ────────────────────────────────────────────────────
         if acting_role == 'hr':
-            action = self.env.ref('ticketing_it.action_it_ticket_pending_hr_approval', raise_if_not_found=False)
-            if action:
-                return {
-                    'type': 'ir.actions.act_window',
-                    'name': action.name,
-                    'res_model': 'it.ticket',
-                    'view_mode': 'list,form',
-                    'views': [(False, 'list'), (False, 'form')],
-                    'domain': [('state', '=', 'hr_approval')],
-                    'target': 'main',
-                }
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Pending HR Approval'),
+                'res_model': 'it.ticket',
+                'view_mode': 'list,form',
+                'views': [(False, 'list'), (False, 'form')],
+                'domain': [('state', '=', 'hr_approval')],
+                'target': 'current',
+            }
 
         return {'type': 'ir.actions.act_window_close'}

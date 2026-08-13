@@ -1,9 +1,13 @@
 # controllers/main.py
+import pytz
+
 from odoo import http, fields
 from odoo.http import request
+from odoo.tools import html2plaintext
 from .access_helpers import check_portal_access, has_feature_access
 import html
 import json
+import pytz
 import logging
 import base64
 import io
@@ -12,6 +16,8 @@ from odoo.exceptions import ValidationError
 import pikepdf
 import traceback
 import urllib.parse
+from datetime import  timedelta
+import re
 
 # Set up logger
 _logger = logging.getLogger(__name__)
@@ -1253,7 +1259,7 @@ class PortalEmployee(http.Controller):
         committed = sum(Leave.search([
             ('employee_id', '=', employee.id),
             ('holiday_status_id', '=', leave_type.id),
-            ('state', 'not in', ['draft', 'refuse']),
+            ('state', 'not in', ['draft', 'refuse', 'cancel']),
         ]).mapped('number_of_days'))
 
         return allocated - committed
@@ -1330,6 +1336,10 @@ class PortalEmployee(http.Controller):
             ('x_frozen_unlocked', '=', True),
             ('holiday_status_id.x_is_frozen', '=', True),
         ]).mapped('holiday_status_id').ids
+        all_active_leaves = request.env['hr.leave'].sudo().search([
+            ('employee_id', '=', employee.id),
+            ('state', 'not in', ['refuse', 'cancel']),
+        ])
 
         def _selectable(lt):
             if lt.max_leaves <= 0:
@@ -1363,6 +1373,10 @@ class PortalEmployee(http.Controller):
                 'label': 'Rejected',
                 'domain': [('state', '=', 'refuse')],
             },
+            'cancelled': {
+                'label': 'Cancelled',
+                'domain': [('state', '=', 'cancel')],
+            },
         }
 
         if not sortby:
@@ -1375,7 +1389,16 @@ class PortalEmployee(http.Controller):
                      ('employee_id', '=', employee.id),
                  ] + searchbar_filters[filterby]['domain']
 
-        leave_requests = request.env['hr.leave'].sudo().search(domain, order=order)
+        page = max(int(page or 1), 1)
+        per_page = 5
+        Leave = request.env['hr.leave'].sudo()
+        total_count = Leave.search_count(domain)
+        total_pages = (total_count + per_page - 1) // per_page
+        if total_pages and page > total_pages:
+            page = total_pages
+        offset = (page - 1) * per_page
+        leave_requests = Leave.search(domain, order=order, limit=per_page, offset=offset)
+        approval_required = employee.company_id.leave_approval_required
 
         line_manager = None
         if employee.line_manager_id and employee.line_manager_id.user_id:
@@ -1390,11 +1413,36 @@ class PortalEmployee(http.Controller):
             success_message = 'Your leave request has been cancelled.'
         elif kw.get('success') == '3':
             success_message = 'Reminder sent successfully to your manager.'
+        elif kw.get('success') == 'applied_approved':
+            success_message = ('Leave application is successful, based on your '
+                               'leave basket, it is approved.')
         require_doc_map = {
             str(lt.id): bool(getattr(lt, 'support_document', False))
             for lt in leave_types
         }
         require_doc_json = json.dumps(require_doc_map)
+
+        backup_employees = request.env['hr.employee'].sudo().search([
+            ('id', '!=', employee.id),
+            ('active', '=', True),
+        ], order='name')
+
+        holiday_recs = request.env['resource.calendar.leaves'].sudo().search([
+            ('resource_id', '=', False),
+        ])
+        holiday_map = {}
+        user_tz = pytz.timezone(request.env.user.tz or 'UTC')
+        for h in holiday_recs:
+            if not h.date_from:
+                continue
+            start = h.date_from
+            end = h.date_to or h.date_from
+            total_days = max(int(round((end - start).total_seconds() / 86400)), 1)
+            for i in range(total_days):
+                slice_mid = start + timedelta(days=i, hours=12)
+                local_mid = pytz.utc.localize(slice_mid).astimezone(user_tz)
+                holiday_map[local_mid.date().strftime('%Y-%m-%d')] = h.name or 'Public Holiday'
+        holiday_json = json.dumps(holiday_map)
 
         values = {
             'employee': employee,
@@ -1404,6 +1452,13 @@ class PortalEmployee(http.Controller):
             'leave_requests': leave_requests,
             'require_doc_json': require_doc_json,
             'page_name': 'my_leaves',
+            'page': page,
+            'total_pages': total_pages,
+            'total_count': total_count,
+            'holiday_json': holiday_json,
+            'backup_employees': backup_employees,
+            'approval_required': approval_required,
+            'all_active_leaves': all_active_leaves,
             'searchbar_sortings': searchbar_sortings,
             'searchbar_filters': searchbar_filters,
             'sortby': sortby,
@@ -1437,15 +1492,56 @@ class PortalEmployee(http.Controller):
             return ("This leave request can't be cancelled directly. "
                     "Please contact HR for help.")
         return "Couldn't cancel this leave request. Please try again or contact HR."
+
+    def _ess_leave_balance_for(self, employee, leave_type):
+        is_accrual = request.env['hr.leave.allocation'].sudo().search_count([
+            ('employee_id', '=', employee.id),
+            ('holiday_status_id', '=', leave_type.id),
+            ('state', '=', 'validate'),
+            ('allocation_type', '=', 'accrual'),
+        ]) > 0
+        if is_accrual:
+            return self._ess_net_balance(employee, leave_type)
+        return leave_type.with_context(
+            employee_id=employee.id
+        ).sudo().virtual_remaining_leaves
+
+    def _ess_leave_notify_recipients(self, employee):
+        company = request.env.company.sudo()
+        emp = employee.sudo()
+        candidates = [
+            emp.work_email,
+            company.leave_hr_department_email,
+            emp.line_manager_id.work_email if emp.line_manager_id else None,
+            emp.parent_id.work_email if emp.parent_id else None,
+            company.leave_hr_manager_id.work_email if company.leave_hr_manager_id else None,
+            company.leave_delivery_head_id.work_email if company.leave_delivery_head_id else None,
+        ]
+        seen, result = set(), []
+        for email in candidates:
+            e = (email or '').strip()
+            if e and e.lower() not in seen:
+                seen.add(e.lower())
+                result.append(e)
+        return result
+
     @http.route(
         '/my/leaves/submit',
         type='http', auth='user', website=True, methods=['POST'], csrf=True
     )
-
     def portal_leave_submit(self, **post):
         employee = self._get_employee()
         if not employee:
             return request.redirect('/my/ess')
+
+        approval_required = employee.company_id.leave_approval_required
+        if approval_required and not employee.line_manager_id:
+            return request.redirect(
+                '/my/leaves?error=1&error_msg=' + urllib.parse.quote_plus(
+                    "You cannot apply for leave because no line manager is assigned. "
+                    "Please contact HR."
+                )
+            )
 
         leave_type_id = post.get('leave_type_id')
         date_from_str = post.get('date_from')
@@ -1468,7 +1564,7 @@ class PortalEmployee(http.Controller):
 
             overlapping = request.env['hr.leave'].sudo().search([
                 ('employee_id', '=', employee.id),
-                ('state', 'not in', ['refuse', 'draft']),
+                ('state', 'not in', ['refuse', 'draft', 'cancel']),
                 ('date_from', '<=', fields.Datetime.from_string(str(date_to_obj) + ' 23:59:59')),
                 ('date_to', '>=', fields.Datetime.from_string(str(date_from_obj) + ' 00:00:00')),
             ], limit=1)
@@ -1492,13 +1588,11 @@ class PortalEmployee(http.Controller):
                 return request.redirect(
                     '/my/leaves?error=1&error_msg=Invalid+leave+type+selected'
                 )
-
         except Exception as e:
             _logger.error("ESS Leave Submit: leave type lookup failed: %s", e)
             return request.redirect(
                 '/my/leaves?error=1&error_msg=Invalid+leave+type'
             )
-
 
         attachment = request.httprequest.files.get('leave_attachment')
         has_file = bool(attachment and attachment.filename)
@@ -1508,7 +1602,24 @@ class PortalEmployee(http.Controller):
                 '/my/leaves?error=1&error_msg=A+supporting+document+is+required+for+this+leave+type.'
             )
 
-
+        if attachment and attachment.filename:
+            allowed_exts = ('.pdf', '.doc', '.docx', '.png', '.jpg', '.jpeg', '.xlsx', '.txt')
+            fname_lower = attachment.filename.lower()
+            if not fname_lower.endswith(allowed_exts):
+                return request.redirect(
+                    '/my/leaves?error=1&error_msg=' + urllib.parse.quote_plus(
+                        "Invalid file type. Allowed: PDF, DOC, DOCX, PNG, JPG, JPEG, XLSX, TXT."
+                    )
+                )
+            attachment.seek(0, 2)
+            file_size = attachment.tell()
+            attachment.seek(0)
+            if file_size > 10 * 1024 * 1024:
+                return request.redirect(
+                    '/my/leaves?error=1&error_msg=' + urllib.parse.quote_plus(
+                        "File is too large. Maximum allowed size is 10MB."
+                    )
+                )
 
         if getattr(leave_type, 'x_is_frozen', False):
             unlocked = request.env['hr.leave.allocation'].sudo().search_count([
@@ -1525,6 +1636,67 @@ class PortalEmployee(http.Controller):
                 )
 
         try:
+            requested_days = self._ess_count_workdays(date_from_obj, date_to_obj)
+            current_balance = self._ess_leave_balance_for(employee, leave_type)
+            if current_balance - requested_days < 0:
+                return request.redirect(
+                    '/my/leaves?error=1&error_msg=' + urllib.parse.quote_plus(
+                        "You do not have enough leave balance for this request. "
+                        "Please reach out to HR for support."
+                    )
+                )
+
+        except Exception as bal_err:
+            _logger.error("ESS Leave Submit: balance check failed: %s", bal_err)
+            return request.redirect(
+                '/my/leaves?error=1&error_msg=' + urllib.parse.quote_plus(
+                    "Could not verify your leave balance. Please reach out to HR for support."
+                )
+            )
+
+        backup_type = (post.get('backup_type') or '').strip()
+        backup_employee_id = post.get('backup_employee_id')
+        backup_name = (post.get('backup_name') or '').strip()
+        backup_email = (post.get('backup_email') or '').strip()
+
+        backup_required = date_to_obj > fields.Date.today()
+
+        if backup_required:
+            if backup_type == 'internal':
+                if not backup_employee_id:
+                    return request.redirect(
+                        '/my/leaves?error=1&error_msg=' + urllib.parse.quote_plus(
+                            "Please select a backup person for this future-dated leave."
+                        )
+                    )
+            elif backup_type == 'external':
+                if not backup_name or not backup_email:
+                    return request.redirect(
+                        '/my/leaves?error=1&error_msg=' + urllib.parse.quote_plus(
+                            "Please provide both the name and email of your external backup."
+                        )
+                    )
+                if not re.match(r"^[A-Za-z .'\-]{2,100}$", backup_name.strip()):
+                    return request.redirect(
+                        '/my/leaves?error=1&error_msg=' + urllib.parse.quote_plus(
+                            "Backup person name can only contain letters, spaces, "
+                            "hyphens, apostrophes, and periods (2-100 characters)."
+                        )
+                    )
+                if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", backup_email.strip()):
+                    return request.redirect(
+                        '/my/leaves?error=1&error_msg=' + urllib.parse.quote_plus(
+                            "Please enter a valid email address for the external backup."
+                        )
+                    )
+            else:
+                return request.redirect(
+                    '/my/leaves?error=1&error_msg=' + urllib.parse.quote_plus(
+                        "Please nominate a backup person for this future-dated leave."
+                    )
+                )
+
+        try:
             leave_vals = {
                 'employee_id': employee.id,
                 'holiday_status_id': leave_type_id_int,
@@ -1532,15 +1704,23 @@ class PortalEmployee(http.Controller):
                 'request_date_to': date_to_obj,
                 'name': reason or '/',
             }
-
             leave = request.env['hr.leave'].sudo().create(leave_vals)
+
+            if backup_required and backup_type:
+                backup_vals = {'x_backup_type': backup_type}
+                if backup_type == 'internal' and backup_employee_id:
+                    backup_vals['x_backup_employee_id'] = int(backup_employee_id)
+                elif backup_type == 'external':
+                    backup_vals['x_backup_name'] = backup_name
+                    backup_vals['x_backup_email'] = backup_email
+                leave.sudo().write(backup_vals)
+
             try:
                 attachment = request.httprequest.files.get('leave_attachment')
                 if attachment and attachment.filename:
                     attachment.seek(0)
                     attachment_content = attachment.read()
-
-                    if len(attachment_content) > 10 * 1024 * 1024:  # 10MB limit
+                    if len(attachment_content) > 10 * 1024 * 1024:
                         _logger.warning(
                             "ESS Leave: attachment too large for leave %s, skipping",
                             leave.id
@@ -1554,60 +1734,99 @@ class PortalEmployee(http.Controller):
                             'res_id': leave.id,
                             'mimetype': attachment.mimetype,
                         })
-
             except Exception as att_err:
-
                 _logger.error(
                     "ESS Leave: attachment upload failed for leave %s: %s",
                     leave.id, att_err
                 )
 
+
+
+            if not approval_required:
+                try:
+                    leave_company = employee.company_id
+                    leave.sudo().with_company(leave_company).with_context(
+                        allowed_company_ids=[leave_company.id],
+                        _ess_approved_sent=True,
+                        _ess_negative_hr_sent=True,
+                    ).action_approve()
+                except Exception as appr_err:
+                    import traceback
+                    _logger.error(
+                        "ESS Leave: auto-approve failed for leave %s: %s",
+                        leave.id, appr_err
+                    )
+                    request.env.cr.rollback()
+                    return request.redirect(
+                        '/my/leaves?error=1&error_msg=' + urllib.parse.quote_plus(
+                            "Could not process your leave. Please reach out to HR for support."
+                        )
+                    )
+
             try:
-                template = request.env.ref(
-                    'employee_self_service_portal'
-                    '.email_template_leave_manager_notification',
-                    raise_if_not_found=False
-                )
-
-                manager_email = (
-                    employee.line_manager_id.work_email
-                    if employee.line_manager_id else False
-                )
-
-                if template and manager_email:
-                    base_url = request.env['ir.config_parameter'].sudo() \
-                        .get_param('web.base.url')
-                    template.with_context(base_url=base_url).sudo().send_mail(
-                        leave.id, force_send=True,
-                        email_values={'email_to': manager_email}
+                recipients = self._ess_leave_notify_recipients(employee)
+                if recipients:
+                    template = request.env.ref(
+                        'employee_self_service_portal.email_template_leave_applied_notification',
+                        raise_if_not_found=False
                     )
-                    _logger.info(
-                        "ESS Leave: apply notification sent (to=%s) for leave %s",
-                        manager_email, leave.id
-                    )
-                else:
-                    _logger.warning(
-                        "ESS Leave: no manager to notify for leave %s (employee %s)",
-                        leave.id, employee.name
-                    )
+                    if template:
+                        base_url = request.env['ir.config_parameter'].sudo() \
+                            .get_param('web.base.url')
+                        template.with_context(base_url=base_url).sudo().send_mail(
+                            leave.id, force_send=True,
+                            email_values={'email_to': ','.join(recipients)}
+                        )
+                        _logger.info(
+                            "ESS Leave: applied notification sent for leave %s to %s",
+                            leave.id, recipients
+                        )
+                    else:
+                        _logger.warning(
+                            "ESS Leave: applied template missing for leave %s", leave.id
+                        )
             except Exception as mail_err:
                 _logger.error(
-                    "ESS Leave: apply notification failed for leave %s: %s",
+                    "ESS Leave: applied notification failed for leave %s: %s",
                     leave.id, mail_err
                 )
 
+            try:
+                if (leave.x_backup_type == 'internal'
+                        and leave.x_backup_employee_id
+                        and leave.x_backup_employee_id.work_email):
+                    bk_template = request.env.ref(
+                        'employee_self_service_portal.email_template_leave_backup_notification',
+                        raise_if_not_found=False
+                    )
+                    if bk_template:
+                        base_url = request.env['ir.config_parameter'].sudo() \
+                            .get_param('web.base.url')
+                        bk_template.with_context(base_url=base_url).sudo().send_mail(
+                            leave.id, force_send=True,
+                            email_values={'email_to': leave.x_backup_employee_id.work_email}
+                        )
+                        _logger.info(
+                            "ESS Leave: backup notification sent for leave %s to %s",
+                            leave.id, leave.x_backup_employee_id.work_email
+                        )
+            except Exception as bk_err:
+                _logger.error(
+                    "ESS Leave: backup notification failed for leave %s: %s",
+                    leave.id, bk_err
+                )
 
+            if not approval_required:
+                return request.redirect('/my/leaves?success=applied_approved')
             return request.redirect('/my/leaves?success=1')
 
         except ValidationError as ve:
             request.env.cr.rollback()
             raw_msg = ve.args[0] if ve.args else str(ve)
             friendly = self._friendly_leave_error(raw_msg)
-
             return request.redirect(
                 '/my/leaves?error=1&error_msg=' + urllib.parse.quote_plus(friendly)
             )
-
         except Exception as e:
             import traceback
             _logger.error(
@@ -1619,6 +1838,17 @@ class PortalEmployee(http.Controller):
             return request.redirect(
                 '/my/leaves?error=1&error_msg=Failed+to+submit+leave.+Please+try+again.'
             )
+
+    def _ess_count_workdays(self, date_from, date_to):
+        if not date_from or not date_to or date_to < date_from:
+            return 0
+        days = 0
+        cur = date_from
+        while cur <= date_to:
+            if cur.weekday() < 5:
+                days += 1
+            cur += timedelta(days=1)
+        return days
 
     @http.route(
         '/my/leaves/<int:leave_id>',
@@ -1662,6 +1892,12 @@ class PortalEmployee(http.Controller):
         if employee.line_manager_id and employee.line_manager_id.user_id:
             line_manager = employee.line_manager_id.user_id
 
+        can_cancel = bool(
+            leave.state in ('draft', 'confirm', 'validate1', 'validate')
+            and leave.request_date_from
+            and leave.request_date_from > fields.Date.today()
+        )
+
         values = {
             'leave': leave,
             'employee': employee,
@@ -1669,6 +1905,7 @@ class PortalEmployee(http.Controller):
             'state_label': state_label,
             'state_badge': state_badge,
             'attachments': attachments,
+            'can_cancel': can_cancel,
             'page_name': 'my_leaves',
             'error': kw.get('error'),
             'error_message': kw.get('error_msg', ''),
@@ -1695,49 +1932,68 @@ class PortalEmployee(http.Controller):
         if not leave:
             return request.redirect('/my/leaves')
 
-        if leave.state not in ('draft', 'confirm'):
+        if leave.state in ('cancel', 'refuse'):
             return request.redirect(
-                '/my/leaves/%d?error=1&error_msg=Only+pending+leaves+can+be+cancelled'
-                % leave_id
+                '/my/leaves/%d?error=1&error_msg=%s' % (
+                    leave_id,
+                    urllib.parse.quote_plus("This leave is already cancelled.")
+                )
+            )
+
+        start_date = leave.request_date_from or (leave.date_from.date() if leave.date_from else None)
+        if not start_date or start_date <= fields.Date.today():
+            return request.redirect(
+                '/my/leaves/%d?error=1&error_msg=%s' % (
+                    leave_id,
+                    urllib.parse.quote_plus(
+                        "This leave can no longer be cancelled because it has "
+                        "already started or is in the past. Please contact HR."
+                    )
+                )
             )
 
         try:
-            leave.sudo().action_cancel()
-            leave.sudo().unlink()
+            leave.sudo().with_context(_ess_selfcancel=True)._action_user_cancel(
+                'Cancelled by employee via portal'
+            )
+            try:
+                hr_email = request.env.company.leave_hr_department_email
+                emp_email = employee.work_email
+                recipients = []
+                for e in (hr_email, emp_email):
+                    e = (e or '').strip()
+                    if e and e not in recipients:
+                        recipients.append(e)
+                if recipients:
+                    tmpl = request.env.ref(
+                        'employee_self_service_portal.email_template_leave_cancelled_self',
+                        raise_if_not_found=False
+                    )
+                    if tmpl:
+                        base_url = request.env['ir.config_parameter'].sudo() \
+                            .get_param('web.base.url')
+                        tmpl.with_context(base_url=base_url).sudo().send_mail(
+                            leave.id, force_send=True,
+                            email_values={'email_to': ','.join(recipients)}
+                        )
+                        _logger.info(
+                            "ESS Cancel: self-cancel email sent for leave %s to %s",
+                            leave.id, recipients
+                        )
+            except Exception as mail_err:
+                _logger.error(
+                    "ESS Cancel: self-cancel email failed for leave %s: %s",
+                    leave.id, mail_err
+                )
 
             return request.redirect('/my/leaves?success=2')
-        except Exception as e1:
-            _logger.warning("ESS Cancel: action_cancel() failed: %s", e1)
-            request.env.cr.rollback()
 
-        try:
-            leave.sudo()._force_cancel()
-            leave.sudo().unlink()
-
-            return request.redirect('/my/leaves?success=2')
-        except Exception as e2:
-            _logger.warning("ESS Cancel: _force_cancel() failed: %s", e2)
-            request.env.cr.rollback()
-
-        try:
-
-            leave.sudo().action_refuse()
-
-            if hasattr(leave, '_force_cancel'):
-                leave.sudo()._force_cancel()
-
-            leave.sudo().with_context(
-                force_delete=True,
-                leave_skip_date_check=True
-            ).unlink()
-
-            return request.redirect('/my/leaves?success=2')
-        except Exception as e3:
-            _logger.error("ESS Cancel: all methods failed for leave %s: %s",
-                          leave_id, e3)
+        except Exception as e:
+            import traceback
+            _logger.error("ESS Cancel: failed for leave %s: %s", leave_id, e)
             _logger.error(traceback.format_exc())
             request.env.cr.rollback()
-            friendly = self._friendly_cancel_error(str(e3))
+            friendly = self._friendly_cancel_error(str(e))
             return request.redirect(
                 '/my/leaves/%d?error=1&error_msg=%s'
                 % (leave_id, urllib.parse.quote_plus(friendly))
@@ -1759,7 +2015,6 @@ class PortalEmployee(http.Controller):
 
         if not leave:
             return request.redirect('/my/leaves')
-
 
         if leave.state not in ('confirm', 'validate1'):
             return request.redirect(
@@ -1799,20 +2054,10 @@ class PortalEmployee(http.Controller):
                 '/my/leaves?error=1&error_msg=Failed+to+send+reminder.+Please+try+again.'
             )
 
-    # End of leave route
-
-    # def _is_line_manager(self):
-    #     """True if the current portal user is the Time Off approver of anyone."""
-    #     return request.env['hr.employee'].sudo().search_count([
-    #         ('leave_manager_id', '=', request.env.user.id),
-    #     ]) > 0
-
     def _is_line_manager(self):
         count = request.env['hr.employee'].sudo().search_count([
             ('line_manager_id.user_id', '=', request.env.user.id),
         ])
-        _logger.info("ESS _is_line_manager: user_id=%s count=%s",
-                     request.env.user.id, count)
         return count > 0
 
     def _manager_pending_leaves(self):
@@ -1822,7 +2067,6 @@ class PortalEmployee(http.Controller):
         ], order='create_date desc')
 
     def _manager_processed_leaves(self, limit=50):
-        """Approved/rejected leaves of this manager's team, for history/tracking."""
         return request.env['hr.leave'].sudo().search([
             ('employee_id.line_manager_id.user_id', '=', request.env.user.id),
             ('state', 'in', ['validate', 'refuse']),
@@ -1830,13 +2074,11 @@ class PortalEmployee(http.Controller):
 
     @http.route(['/my/approvals'], type='http', auth='user', website=True)
     def portal_my_approvals(self, filterby=None, **kw):
-        # Gate: only line managers may see this page
         if not self._is_line_manager():
             return request.redirect('/my/ess')
 
         searchbar_filters = {
             'pending': {'label': 'Pending', 'domain': [('state', '=', 'confirm')]},
-
 
             'approved': {'label': 'Approved', 'domain': [('state', 'in', ['validate1', 'validate'])]},
             'rejected': {
@@ -1849,7 +2091,6 @@ class PortalEmployee(http.Controller):
         if not filterby:
             filterby = 'pending'
 
-        # Base domain: ALWAYS scoped to this manager's team (security guardrail)
         domain = [
                      ('employee_id.line_manager_id.user_id', '=', request.env.user.id),
                  ] + searchbar_filters[filterby]['domain']
@@ -1910,10 +2151,13 @@ class PortalEmployee(http.Controller):
         manager_name = manager_emp.name or request.env.user.name
 
         try:
-            leave.action_approve()
+            leave_company = leave.employee_id.company_id
+            leave.with_company(leave_company).with_context(
+                allowed_company_ids=[leave_company.id]
+            ).action_approve()
             leave.message_post(
                 body="Approved via portal by line manager: %s" % manager_name,
-                subtype_xmlid = 'mail.mt_note',
+                subtype_xmlid='mail.mt_note',
             )
             _logger.info("ESS Portal Approval: leave %s approved by user %s",
                          leave.id, request.env.user.id)
@@ -1959,7 +2203,7 @@ class PortalEmployee(http.Controller):
             note = "Rejected via portal by line manager: %s" % manager_name
             if reason:
                 note += "<br/>Reason: %s" % reason
-            leave.message_post(body=note,subtype_xmlid='mail.mt_note',)
+            leave.message_post(body=note, subtype_xmlid='mail.mt_note', )
 
             _logger.info("ESS Portal Approval: leave %s rejected by user %s",
                          leave.id, request.env.user.id)
@@ -2257,7 +2501,19 @@ class PortalEmployee(http.Controller):
         except Exception:
             pass
 
+        form16_count = 0
+        latest_form16 = None
+        if employee and employee.currency_id.name == 'INR':
+            form16_records = request.env['hr.employee.form16'].sudo().search(
+                [('employee_id', '=', employee.id)], order='financial_year desc'
+            )
+            form16_count = len(form16_records)
+            latest_form16 = form16_records[0] if form16_records else None
+
+
         dashboard_data.update({
+            'form16_count': form16_count,
+            'latest_form16': latest_form16,
             'payslips_count': payslips_count,
             'latest_payslip': latest_payslip,
             'today_attendances': today_attendances,
@@ -3424,7 +3680,7 @@ class PortalEmployee(http.Controller):
         user = request.env.user
 
         # Build base domain
-        domain = [('user_id', '=', user.id)]
+        domain = [('user_id', '=', user.id), ('type', '=', 'opportunity')]
 
         # Apply filters based on parameters
         stage_filter = kwargs.get('stage')
@@ -3448,6 +3704,10 @@ class PortalEmployee(http.Controller):
         priority_filter = kwargs.get('priority')
         if priority_filter:
             domain.append(('priority', '=', priority_filter))
+
+        company_filter = kwargs.get('company')
+        if company_filter:
+            domain.append(('partner_id.parent_id.name', 'ilike', company_filter))
 
         # Date range filters
         date_from = kwargs.get('date_from')
@@ -3568,7 +3828,6 @@ class PortalEmployee(http.Controller):
             if 'industry_id' in all_user_leads._fields:
                 # Get ALL industries available in the system
                 industries = request.env['crm.industry'].sudo().search([('active', '=', True)], order='name')
-                # industries = request.env['res.partner.industry'].sudo().search([], order='name')
         except Exception:
             industries = []
 
@@ -3625,6 +3884,7 @@ class PortalEmployee(http.Controller):
                 'practice': practice_filter or '',
                 'industry': industry_filter or '',
                 'priority': priority_filter or '',
+                'company': company_filter or '',
                 'date_from': date_from or '',
                 'date_to': date_to or '',
                 'activity_due_from': activity_due_from or '',
@@ -3690,6 +3950,23 @@ class PortalEmployee(http.Controller):
             'relative_date': relative_date,
             'badge_class': badge_class
         }
+
+    def _get_recent_contact_note(self, contact):
+        """Get the most recent CRM lead 'Notes' tab (description field) for a given contact/partner."""
+        leads = request.env['crm.lead'].sudo().search([
+            ('partner_id', '=', contact.id),
+        ], order='write_date desc')
+
+        for lead in leads:
+            if lead.description:
+                plain_note = html2plaintext(lead.description).strip()
+                if plain_note:
+                    note = plain_note
+                    if len(note) > 47:
+                        note = note[:47] + '...'
+                    return note
+
+        return '-'
 
     def _get_recent_note_info(self, lead):
         """Get recent note information"""
@@ -3776,10 +4053,27 @@ class PortalEmployee(http.Controller):
         user = request.env.user
         if request.httprequest.method == 'POST':
             # Process partner_id (customer) - handle creation of new customers
+            # Process partner_id (customer) - handle creation of new customers
             partner_id = _process_partner_field(post.get('partner_id'), 'partner_id')
 
             # Process point_of_contact_id - handle creation of new contacts
             point_of_contact_id = _process_partner_field(post.get('point_of_contact_id'), 'point_of_contact_id')
+
+            # Link the typed Company name to the customer's parent company
+            company_name = (post.get('company_name') or '').strip()
+            if company_name and partner_id:
+                company = request.env['res.partner'].sudo().search([
+                    ('name', '=ilike', company_name),
+                    ('is_company', '=', True),
+                ], limit=1)
+                if not company:
+                    company = request.env['res.partner'].sudo().create({
+                        'name': company_name,
+                        'is_company': True,
+                    })
+                request.env['res.partner'].sudo().browse(partner_id).write({
+                    'parent_id': company.id
+                })
 
             vals = {
                 'name': post.get('name'),
@@ -3923,6 +4217,169 @@ class PortalEmployee(http.Controller):
         if lead and lead.user_id.id == user.id:
             lead.sudo().unlink()
         return request.redirect('/my/employee/crm')
+
+    @http.route('/my/contacts', type='http', auth='user', website=True)
+    def portal_contacts_list(self, search='', success='', **kwargs):
+        customer_ids = request.env['crm.lead'].sudo().search([
+            ('partner_id', '!=', False)
+        ]).mapped('partner_id').ids
+
+        domain = [('id', 'in', customer_ids)]
+        if search:
+            domain += ['|', '|', '|',
+                       ('name', 'ilike', search),
+                       ('email', 'ilike', search),
+                       ('department', 'ilike', search),
+                       ('customer_code', 'ilike', search)]
+        contacts = request.env['res.partner'].sudo().search(domain, order='name')
+        contact_notes = {c.id: self._get_recent_contact_note(c) for c in contacts}
+        return request.render('employee_self_service_portal.portal_contacts_list', {
+            'contacts': contacts,
+            'contact_notes': contact_notes,
+            'search': search,
+            'success': success,
+        })
+
+    @http.route('/my/contacts/live_search', type='http', auth='user', website=True, csrf=False)
+    def portal_contacts_live_search(self, search='', **kwargs):
+        customer_ids = request.env['crm.lead'].sudo().search([
+            ('partner_id', '!=', False)
+        ]).mapped('partner_id').ids
+
+        domain = [('id', 'in', customer_ids)]
+        if search:
+            domain += ['|', '|', '|','|',
+                       ('name', 'ilike', search),
+                       ('email', 'ilike', search),
+                       ('department', 'ilike', search),
+                       ('parent_id.name', 'ilike', search),
+                       ('customer_code', 'ilike', search)]
+        contacts = request.env['res.partner'].sudo().search(domain, order='name')
+        contact_notes = {c.id: self._get_recent_contact_note(c) for c in contacts}
+        return request.render('employee_self_service_portal.portal_contacts_results_block', {
+            'contacts': contacts,
+            'contact_notes': contact_notes,
+        })
+
+    @http.route('/my/contacts/create', type='http', auth='user', website=True, methods=['GET', 'POST'])
+    def portal_contacts_create(self, **post):
+        if request.httprequest.method == 'POST':
+            email = (post.get('email') or '').strip()
+            if email:
+                existing = request.env['res.partner'].sudo().search([
+                    ('email', '=ilike', email)
+                ], limit=1)
+                if existing:
+                    return request.render('employee_self_service_portal.portal_contacts_create_form', {
+                        'error': 'A contact with this email already exists: %s' % existing.name,
+                        'post': post,
+                    })
+
+            name = (post.get('name') or '').upper()
+
+            company_name = (post.get('parent_id') or '').strip().upper()
+            parent_id = False
+            if company_name:
+                company = request.env['res.partner'].sudo().search([
+                    ('name', '=ilike', company_name),
+                    ('is_company', '=', True),
+                ], limit=1)
+                if not company:
+                    company = request.env['res.partner'].sudo().create({
+                        'name': company_name,
+                        'is_company': True,
+                    })
+                parent_id = company.id
+
+            partner = request.env['res.partner'].sudo().create({
+                'name': name,
+                'email': email or False,
+                'phone': post.get('phone') or False,
+                'department': post.get('department') or False,
+                'function': post.get('function') or False,
+                'parent_id': parent_id,
+                'is_company': True,
+            })
+
+            request.env['crm.lead'].sudo().create({
+                'name': name,
+                'partner_id': partner.id,
+                'contact_name': name,
+                'email_from': email or False,
+                'phone': post.get('phone') or False,
+                'function': post.get('function') or False,
+                'type': 'lead',
+            })
+
+            return request.redirect('/my/contacts?success=created')
+        return request.render('employee_self_service_portal.portal_contacts_create_form', {})
+
+    @http.route('/my/contacts/<int:partner_id>/edit', type='http', auth='user', website=True, methods=['GET', 'POST'])
+    def portal_contacts_edit(self, partner_id, **post):
+        customer_ids = request.env['crm.lead'].sudo().search([
+            ('partner_id', '!=', False)
+        ]).mapped('partner_id').ids
+        if partner_id not in customer_ids:
+            return request.not_found()
+
+        contact = request.env['res.partner'].sudo().browse(partner_id)
+
+        if request.httprequest.method == 'POST':
+            email = (post.get('email') or '').strip()
+            if email:
+                existing = request.env['res.partner'].sudo().search([
+                    ('email', '=ilike', email),
+                    ('id', '!=', partner_id),
+                ], limit=1)
+                if existing:
+                    return request.render('employee_self_service_portal.portal_contacts_edit_form', {
+                        'error': 'A contact with this email already exists: %s' % existing.name,
+                        'post': post,
+                        'contact': contact,
+                    })
+
+            name = (post.get('name') or '').upper()
+
+            company_name = (post.get('parent_id') or '').strip().upper()
+            parent_id = False
+            if company_name:
+                company = request.env['res.partner'].sudo().search([
+                    ('name', '=ilike', company_name),
+                    ('is_company', '=', True),
+                    ('id', '!=', partner_id),
+                ], limit=1)
+                if not company:
+                    company = request.env['res.partner'].sudo().create({
+                        'name': company_name,
+                        'is_company': True,
+                    })
+                parent_id = company.id
+
+            vals = {
+                'name': name,
+                'email': email or False,
+                'phone': post.get('phone') or False,
+                'department': post.get('department') or False,
+                'function': post.get('function') or False,
+                'parent_id': parent_id,
+            }
+            contact.write(vals)
+
+            leads = request.env['crm.lead'].sudo().search([('partner_id', '=', partner_id)])
+            if leads:
+                leads.write({
+                    'name': name,
+                    'contact_name': name,
+                    'email_from': email or False,
+                    'phone': post.get('phone') or False,
+                    'function': post.get('function') or False,
+                })
+
+            return request.redirect('/my/contacts?success=updated')
+
+        return request.render('employee_self_service_portal.portal_contacts_edit_form', {'contact': contact})
+
+
 
     @http.route('/my/employee/crm/log_note/<int:lead_id>', type='http', auth='user', website=True, methods=['POST'])
     def portal_employee_crm_log_note(self, lead_id, **post):
@@ -4436,6 +4893,74 @@ class PortalEmployee(http.Controller):
     #     return request.env['ir.http'].with_context(attachment_token=attachment.access_token)._get_record_and_check(
     #         'ir.attachment', attachment.id
     #     )
+
+    @http.route('/my/employee/form16', type='http', auth='user', website=True)
+    def portal_form16(self, **kwargs):
+        """Portal route for viewing Form 16 documents - Only for INR employees"""
+        employee = request.env['hr.employee'].sudo().search([
+            ('user_id', '=', request.env.uid)
+        ], limit=1)
+
+        if not employee:
+            return request.redirect('/my/employee')
+
+        # Only show if employee currency is INR
+        if employee.currency_id.name != 'INR':
+            return request.redirect('/my/employee')
+
+        selected_year = kwargs.get('financial_year', '')
+
+        domain = [('employee_id', '=', employee.id)]
+        if selected_year:
+            domain += [('financial_year', '=', selected_year)]
+
+        form16_records = request.env['hr.employee.form16'].sudo().search(
+            domain, order='financial_year desc'
+        )
+
+        # Get distinct financial years for filter dropdown
+        all_years = request.env['hr.employee.form16'].sudo().search([
+            ('employee_id', '=', employee.id)
+        ], order='financial_year desc').mapped('financial_year')
+
+        return request.render('employee_self_service_portal.portal_form16', {
+            'employee': employee,
+            'form16_records': form16_records,
+            'all_years': all_years,
+            'selected_year': selected_year,
+        })
+
+    @http.route('/my/employee/form16/download/<int:record_id>', type='http', auth='user', website=True)
+    def portal_form16_download(self, record_id, **kwargs):
+        """Download Form 16 PDF"""
+        employee = request.env['hr.employee'].sudo().search([
+            ('user_id', '=', request.env.uid)
+        ], limit=1)
+
+        if not employee:
+            return request.redirect('/my/employee')
+
+        record = request.env['hr.employee.form16'].sudo().search([
+            ('id', '=', record_id),
+            ('employee_id', '=', employee.id),  # security: only own records
+        ], limit=1)
+
+        if not record or not record.form16_pdf:
+            return request.redirect('/my/employee/form16?error=not_found')
+
+        import base64
+        pdf_content = base64.b64decode(record.form16_pdf)
+        filename = record.form16_filename or f'Form16_{record.financial_year}.pdf'
+
+        return request.make_response(
+            pdf_content,
+            headers=[
+                ('Content-Type', 'application/pdf'),
+                ('Content-Disposition', f'attachment; filename="{filename}"'),
+                ('Content-Length', len(pdf_content)),
+            ]
+        )
+
 
     @http.route(MY_EMPLOYEE_URL + '/payslips', type='http', auth='user', website=True)
     @check_portal_access('payslip')

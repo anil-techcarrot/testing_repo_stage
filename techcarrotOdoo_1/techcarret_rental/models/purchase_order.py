@@ -53,13 +53,13 @@ class PurchaseOrderLine(models.Model):
 
 
     def _check_qty_whole_fraction_po_line(self):
-        qty = self.product_uom_qty
-        frac_qty = str(self.product_uom_qty).split('.')[1]
+        qty = self.product_qty
+        frac_qty = str(self.product_qty).split('.')[1]
         frac_qty = int(frac_qty)
         if frac_qty == 0:
-            qty = "{:,.2f}".format(self.product_uom_qty)
+            qty = "{:,.2f}".format(self.product_qty)
         else:
-            digits = f"{self.product_uom_qty:.6f}"
+            digits = f"{self.product_qty:.6f}"
             if '.' in digits:
                 qty = digits.rstrip('0').rstrip('.')
         return qty

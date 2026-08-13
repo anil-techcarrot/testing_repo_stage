@@ -15,7 +15,7 @@
                             <span id="currentDate"></span>
                         </p>
                         <!-- Add after the welcome paragraph in the Header Section  -->
-
+                        <!-- Add after the welcome paragraph in the Header Section  -->
                         <t t-if="request.params.get('ticket_success')">
                             <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
                                 <i class="fa fa-check-circle me-2"></i>
@@ -153,7 +153,7 @@
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <h6 class="text-muted mb-1">Active Leads</h6>
+                                            <h6 class="text-muted mb-1">Active Opportunities</h6>
                                             <h4 class="text-info mb-0" t-esc="crm_leads_count or 0"/>
                                             <small class="text-muted">
                                                 <t t-if="crm_leads_count and crm_leads_count > 0">
@@ -161,7 +161,7 @@
                                                     Manage now
                                                 </t>
                                                 <t t-else="">
-                                                    No active leads
+                                                    No active opportunities
                                                 </t>
                                             </small>
                                         </div>
@@ -487,77 +487,80 @@
 
 
                             <!--                            &lt;!&ndash; IT Tickets Card - ADD after Payslips card in Module Cards section &ndash;&gt;-->
-                            <!--                            <div class="col-md-6">-->
-                            <!--                                <div class="module-card card border-0 shadow-sm h-100">-->
-                            <!--                                    <div class="card-body">-->
-                            <!--                                        <div class="d-flex align-items-center mb-3">-->
-                            <!--                                            <div class="icon-circle bg-danger bg-opacity-10 me-3">-->
-                            <!--                                                <i class="fa fa-ticket fa-lg text-danger"></i>-->
-                            <!--                                            </div>-->
-                            <!--                                            <div>-->
-                            <!--                                                <h5 class="mb-1">IT Support</h5>-->
-                            <!--                                                <p class="text-muted mb-0 small">Submit and track IT tickets</p>-->
-                            <!--                                            </div>-->
-                            <!--                                        </div>-->
+<!--                                                        <div class="col-md-6">-->
+<!--                                                            <div class="module-card card border-0 shadow-sm h-100">-->
+<!--                                                                <div class="card-body">-->
+<!--                                                                    <div class="d-flex align-items-center mb-3">-->
+<!--                                                                        <div class="icon-circle bg-danger bg-opacity-10 me-3">-->
+<!--                                                                            <i class="fa fa-ticket fa-lg text-danger"></i>-->
+<!--                                                                        </div>-->
+<!--                                                                        <div>-->
+<!--                                                                            <h5 class="mb-1">IT Support</h5>-->
+<!--                                                                            <p class="text-muted mb-0 small">Submit and track IT tickets</p>-->
+<!--                                                                        </div>-->
+<!--                                                                    </div>-->
 
-                            <!--                                        &lt;!&ndash; Ticket Stats &ndash;&gt;-->
-                            <!--                                        <div class="ticket-summary mb-3">-->
-                            <!--                                            <div class="row text-center">-->
-                            <!--                                                <div class="col-6">-->
-                            <!--                                                    <div class="metric-box">-->
-                            <!--                                                        <h4 class="text-danger mb-0" t-esc="it_tickets_count or 0"/>-->
-                            <!--                                                        <small class="text-muted">Total</small>-->
-                            <!--                                                    </div>-->
-                            <!--                                                </div>-->
-                            <!--                                                <div class="col-6">-->
-                            <!--                                                    <div class="metric-box">-->
-                            <!--                                                        <h4 class="text-warning mb-0" t-esc="it_tickets_pending or 0"/>-->
-                            <!--                                                        <small class="text-muted">Pending</small>-->
-                            <!--                                                    </div>-->
-                            <!--                                                </div>-->
-                            <!--                                            </div>-->
-                            <!--                                        </div>-->
+<!--                                                                    &lt;!&ndash; Ticket Stats &ndash;&gt;-->
+<!--                                                                    <div class="ticket-summary mb-3">-->
+<!--                                                                        <div class="row text-center">-->
+<!--                                                                            <div class="col-6">-->
+<!--                                                                                <div class="metric-box">-->
+<!--                                                                                    <h4 class="text-danger mb-0" t-esc="it_tickets_count or 0"/>-->
+<!--                                                                                    <small class="text-muted">Total</small>-->
+<!--                                                                                </div>-->
+<!--                                                                            </div>-->
+<!--                                                                            <div class="col-6">-->
+<!--                                                                                <div class="metric-box">-->
+<!--                                                                                    <h4 class="text-warning mb-0" t-esc="it_tickets_pending or 0"/>-->
+<!--                                                                                    <small class="text-muted">Pending</small>-->
+<!--                                                                                </div>-->
+<!--                                                                            </div>-->
+<!--                                                                        </div>-->
+<!--                                                                    </div>-->
 
-                            <!--                                        &lt;!&ndash; Recent Tickets Preview &ndash;&gt;-->
-                            <!--                                        <t t-if="it_tickets_recent">-->
-                            <!--                                            <div class="mb-3">-->
-                            <!--                                                <t t-foreach="it_tickets_recent" t-as="ticket">-->
-                            <!--                                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">-->
-                            <!--                                                        <small class="text-truncate me-2" style="max-width:140px;">-->
-                            <!--                                                            <t t-esc="ticket.name"/>-->
-                            <!--                                                            - -->
-                            <!--                                                            <t t-esc="ticket.subject"/>-->
-                            <!--                                                        </small>-->
-                            <!--                                                        <span t-attf-class="badge badge-{{-->
-                            <!--                                'success' if ticket.state == 'done' else-->
-                            <!--                                'danger' if ticket.state == 'rejected' else-->
-                            <!--                                'warning' if ticket.state in ['manager_approval','it_approval'] else-->
-                            <!--                                'secondary'-->
-                            <!--                            }} badge-sm" style="font-size:0.65rem;">-->
-                            <!--                                                            <t t-esc="dict(ticket._fields['state'].selection).get(ticket.state)"/>-->
-                            <!--                                                        </span>-->
-                            <!--                                                    </div>-->
-                            <!--                                                </t>-->
-                            <!--                                            </div>-->
-                            <!--                                        </t>-->
+<!--                                                                    &lt;!&ndash; Recent Tickets Preview &ndash;&gt;-->
+<!--                                                                    <t t-if="it_tickets_recent">-->
+<!--                                                                        <div class="mb-3">-->
+<!--                                                                            <t t-foreach="it_tickets_recent" t-as="ticket">-->
+<!--                                                                                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">-->
+<!--                                                                                    <small class="text-truncate me-2" style="max-width:140px;">-->
+<!--                                                                                        <t t-esc="ticket.name"/>-->
+<!--                                                                                        - -->
+<!--                                                                                        <t t-esc="ticket.subject"/>-->
+<!--                                                                                    </small>-->
+<!--                                                                                    <span t-attf-class="badge badge-{{-->
+<!--                                                            'success' if ticket.state == 'done' else-->
+<!--                                                            'danger' if ticket.state == 'rejected' else-->
+<!--                                                            'warning' if ticket.state in ['manager_approval','it_approval'] else-->
+<!--                                                            'secondary'-->
+<!--                                                        }} badge-sm" style="font-size:0.65rem;">-->
+<!--                                                                                        <t t-esc="dict(ticket._fields['state'].selection).get(ticket.state)"/>-->
+<!--                                                                                    </span>-->
+<!--                                                                                </div>-->
+<!--                                                                            </t>-->
+<!--                                                                        </div>-->
+<!--                                                                    </t>-->
 
-                            <!--                                        &lt;!&ndash; Action Buttons &ndash;&gt;-->
-                            <!--                                        <div class="d-grid gap-2">-->
-                            <!--                                            <a href="/my/ess/tickets/new" class="btn btn-danger btn-sm">-->
-                            <!--                                                <i class="fa fa-plus me-1"></i>-->
-                            <!--                                                Create New Ticket-->
-                            <!--                                            </a>-->
-                            <!--                                            <a href="/my/tickets" class="btn btn-outline-danger btn-sm">-->
-                            <!--                                                <i class="fa fa-list me-1"></i>-->
-                            <!--                                                View All Tickets-->
-                            <!--                                            </a>-->
-                            <!--                                        </div>-->
-                            <!--                                    </div>-->
-                            <!--                                </div>-->
-                            <!--                            </div>-->
+<!--                                                                    &lt;!&ndash; Action Buttons &ndash;&gt;-->
+<!--                                                                    <div class="d-grid gap-2">-->
+<!--                                                                        <a href="/my/ess/tickets/new" class="btn btn-danger btn-sm">-->
+<!--                                                                            <i class="fa fa-plus me-1"></i>-->
+<!--                                                                            Create New Ticket-->
+<!--                                                                        </a>-->
+<!--                                                                        <a href="/my/tickets" class="btn btn-outline-danger btn-sm">-->
+<!--                                                                            <i class="fa fa-list me-1"></i>-->
+<!--                                                                            View All Tickets-->
+<!--                                                                        </a>-->
+<!--                                                                    </div>-->
+<!--                                                                </div>-->
+<!--                                                            </div>-->
+<!--                                                        </div>-->
 
 
-                            <!--LEAVE MANAGEMENT CARD -->
+
+
+
+<!--                            LEAVE MANAGEMENT CARD -->
                             <div class="col-md-4">
                                 <div class="module-card card border-0 shadow-sm h-100">
                                     <div class="card-body d-flex flex-column justify-content-between">
@@ -628,68 +631,68 @@
 
                             <!--Leave Approval Card For Line Manager-->
 
-                            <t t-if="is_line_manager">
-                                <div class="col-md-4">
-                                    <div class="module-card card border-0 shadow-sm h-100">
-                                        <div class="card-body d-flex flex-column justify-content-between">
+<!--                            <t t-if="is_line_manager">-->
+<!--                                <div class="col-md-4">-->
+<!--                                    <div class="module-card card border-0 shadow-sm h-100">-->
+<!--                                        <div class="card-body d-flex flex-column justify-content-between">-->
 
-                                            <div class="d-flex align-items-center mb-3">
-                                                <div class="icon-circle me-3" style="background:rgba(44,91,50,0.12);">
-                                                    <i class="fa fa-check-square-o fa-lg" style="color:#2C5B32;"></i>
-                                                </div>
-                                                <div>
-                                                    <h5 class="mb-1">Approvals</h5>
-                                                    <p class="text-muted mb-0 small">
-                                                        Review your team's leave requests
-                                                    </p>
-                                                </div>
-                                            </div>
+<!--                                            <div class="d-flex align-items-center mb-3">-->
+<!--                                                <div class="icon-circle me-3" style="background:rgba(44,91,50,0.12);">-->
+<!--                                                    <i class="fa fa-check-square-o fa-lg" style="color:#2C5B32;"></i>-->
+<!--                                                </div>-->
+<!--                                                <div>-->
+<!--                                                    <h5 class="mb-1">Approvals</h5>-->
+<!--                                                    <p class="text-muted mb-0 small">-->
+<!--                                                        Review your team's leave requests-->
+<!--                                                    </p>-->
+<!--                                                </div>-->
+<!--                                            </div>-->
 
-                                            <div class="leave-summary mb-3">
-                                                <div class="row text-center">
-                                                    <div class="col-4">
-                                                        <div class="metric-box">
-                                                            <h4 class="mb-0" style="color:#E8450A;"
-                                                                t-esc="approvals_pending_count or 0"/>
-                                                            <small class="text-muted">Pending</small>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-4">
-                                                        <div class="metric-box">
-                                                            <h4 class="mb-0" style="color:#2D6A4F;"
-                                                                t-esc="approvals_approved_count or 0"/>
-                                                            <small class="text-muted">Approved</small>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-4">
-                                                        <div class="metric-box">
-                                                            <h4 class="mb-0" style="color:#E8450A;"
-                                                                t-esc="approvals_rejected_count or 0"/>
-                                                            <small class="text-muted">Rejected</small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+<!--                                            <div class="leave-summary mb-3">-->
+<!--                                                <div class="row text-center">-->
+<!--                                                    <div class="col-4">-->
+<!--                                                        <div class="metric-box">-->
+<!--                                                            <h4 class="mb-0" style="color:#E8450A;"-->
+<!--                                                                t-esc="approvals_pending_count or 0"/>-->
+<!--                                                            <small class="text-muted">Pending</small>-->
+<!--                                                        </div>-->
+<!--                                                    </div>-->
+<!--                                                    <div class="col-4">-->
+<!--                                                        <div class="metric-box">-->
+<!--                                                            <h4 class="mb-0" style="color:#2D6A4F;"-->
+<!--                                                                t-esc="approvals_approved_count or 0"/>-->
+<!--                                                            <small class="text-muted">Approved</small>-->
+<!--                                                        </div>-->
+<!--                                                    </div>-->
+<!--                                                    <div class="col-4">-->
+<!--                                                        <div class="metric-box">-->
+<!--                                                            <h4 class="mb-0" style="color:#E8450A;"-->
+<!--                                                                t-esc="approvals_rejected_count or 0"/>-->
+<!--                                                            <small class="text-muted">Rejected</small>-->
+<!--                                                        </div>-->
+<!--                                                    </div>-->
+<!--                                                </div>-->
+<!--                                            </div>-->
 
-                                            <div class="d-grid gap-2">
-                                                <a href="/my/approvals"
-                                                   class="btn btn-sm text-white fw-bold"
-                                                   style="background:linear-gradient(135deg,#2C5B32,#E74C2D);border:none;">
-                                                    <i class="fa fa-list me-1"></i>
-                                                    View Approvals
-                                                </a>
-                                                <a href="/my/approvals?filterby=approved"
-                                                   class="btn btn-sm"
-                                                   style="border:1.5px solid #2C5B32;color:#2C5B32;background:#fff;">
-                                                    <i class="fa fa-history me-1"></i>
-                                                    View History
-                                                </a>
-                                            </div>
+<!--                                            <div class="d-grid gap-2">-->
+<!--                                                <a href="/my/approvals"-->
+<!--                                                   class="btn btn-sm text-white fw-bold"-->
+<!--                                                   style="background:linear-gradient(135deg,#2C5B32,#E74C2D);border:none;">-->
+<!--                                                    <i class="fa fa-list me-1"></i>-->
+<!--                                                    View Approvals-->
+<!--                                                </a>-->
+<!--                                                <a href="/my/approvals?filterby=approved"-->
+<!--                                                   class="btn btn-sm"-->
+<!--                                                   style="border:1.5px solid #2C5B32;color:#2C5B32;background:#fff;">-->
+<!--                                                    <i class="fa fa-history me-1"></i>-->
+<!--                                                    View History-->
+<!--                                                </a>-->
+<!--                                            </div>-->
 
-                                        </div>
-                                    </div>
-                                </div>
-                            </t>
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            </t>-->
 
 
                             <!-- IT Tickets Card - ADD after Payslips card in Module Cards section -->
@@ -817,7 +820,7 @@
                                                     <div class="col-6">
                                                         <div class="metric-box">
                                                             <h4 class="text-info mb-0" t-esc="crm_leads_count or 0"/>
-                                                            <small class="text-muted">Active Leads</small>
+                                                            <small class="text-muted">Active Opportunities</small>
                                                         </div>
                                                     </div>
                                                     <div class="col-6">
@@ -831,9 +834,13 @@
                                                 </div>
                                             </div>
 
+                                            <a href="/my/contacts" class="btn btn-outline-primary btn-sm mt-2">
+                                                <i class="fa fa-address-book"></i>
+                                                View Leads
+                                            </a>
                                             <a href="/my/employee/crm" class="btn btn-outline-info btn-sm w-100">
                                                 <i class="fa fa-eye"></i>
-                                                View CRM
+                                                View Opportunities
                                             </a>
                                         </div>
                                     </div>
@@ -956,6 +963,68 @@
                                     </div>
                                 </div>
                             </t>
+
+<!--                            <t t-if="employee.currency_id.name == 'INR'">-->
+<!--                                <div class="col-md-4">-->
+<!--                                    <div class="module-card card border-0 shadow-sm h-100">-->
+<!--                                        <div class="card-body d-flex flex-column justify-content-between">-->
+
+<!--                                            <div class="d-flex align-items-center mb-3">-->
+<!--                                                <div class="icon-circle bg-danger bg-opacity-10 me-3">-->
+<!--                                                    <i class="fa fa-file-pdf-o fa-lg text-danger"></i>-->
+<!--                                                </div>-->
+<!--                                                <div>-->
+<!--                                                    <h5 class="mb-1">Form 16</h5>-->
+<!--                                                    <p class="text-muted mb-0 small">-->
+<!--                                                        View and download Form 16-->
+<!--                                                    </p>-->
+<!--                                                </div>-->
+<!--                                            </div>-->
+
+<!--                                            <div class="form16-summary mb-3">-->
+
+<!--                                                <div class="row m-0 mt-1">-->
+<!--                                                    <div class="col-5 small text-muted p-0">-->
+<!--                                                        Total Records-->
+<!--                                                    </div>-->
+<!--                                                    <div class="col-1 text-center small p-0">-->
+<!--                                                        :-->
+<!--                                                    </div>-->
+<!--                                                    <div class="col-6">-->
+<!--                                                        <strong class="small text-danger p-0"-->
+<!--                                                                t-esc="form16_count or 0"/>-->
+<!--                                                    </div>-->
+<!--                                                </div>-->
+
+<!--                                                <t t-if="latest_form16">-->
+<!--                                                    <div class="row m-0 mt-1">-->
+<!--                                                        <div class="col-3 small text-muted p-0">-->
+<!--                                                            Latest-->
+<!--                                                        </div>-->
+<!--                                                        <div class="col-1 text-center small p-0">-->
+<!--                                                            :-->
+<!--                                                        </div>-->
+<!--                                                        <div class="col-8 p-0">-->
+<!--                                                            <small class="text-muted">-->
+<!--                                                                <t t-esc="latest_form16.financial_year"/>-->
+<!--                                                            </small>-->
+<!--                                                        </div>-->
+<!--                                                    </div>-->
+<!--                                                </t>-->
+
+<!--                                            </div>-->
+
+<!--                                            <a href="/my/employee/form16"-->
+<!--                                               class="btn btn-outline-danger btn-sm w-100">-->
+<!--                                                <i class="fa fa-download"></i>-->
+<!--                                                View Form 16-->
+<!--                                            </a>-->
+
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            </t>-->
+
                         </div>
                     </div>
 

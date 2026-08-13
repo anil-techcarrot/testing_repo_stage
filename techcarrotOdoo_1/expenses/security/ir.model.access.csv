@@ -1,0 +1,12 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hr_expense_subcategory_all,hr.expense.subcategory.all.access,model_hr_expense_subcategory,,1,0,0,0
+access_hr_expense_subcategory_manager,hr.expense.subcategory.manager.access,model_hr_expense_subcategory,base.group_system,1,1,1,1
+access_hr_expense_request_portal,hr.expense.request.portal.access,model_hr_expense_request,group_portal_expenses,1,1,1,0
+access_hr_expense_request_internal,hr.expense.request.internal.access,model_hr_expense_request,base.group_user,1,1,1,0
+access_hr_expense_request_line_portal,hr.expense.request.line.portal.access,model_hr_expense_request_line,group_portal_expenses,1,1,1,1
+access_hr_expense_request_line_internal,hr.expense.request.line.internal.access,model_hr_expense_request_line,base.group_user,1,1,0,0
+access_hr_expense_request_approval_portal,hr.expense.request.approval.portal.access,model_hr_expense_request_approval,group_portal_expenses,1,0,0,0
+access_hr_expense_request_approval_internal,hr.expense.request.approval.internal.access,model_hr_expense_request_approval,base.group_user,1,0,0,0
+access_project_project_portal_user,project.project.portal.user.access,project.model_project_project,base.group_portal,1,0,0,0
+access_hr_expense_approval_wizard,hr.expense.approval.wizard.access,model_hr_expense_approval_wizard,base.group_user,1,1,1,1
+access_hr_expense_mark_paid_wizard,hr.expense.mark.paid.wizard.access,model_hr_expense_mark_paid_wizard,base.group_user,1,1,1,1

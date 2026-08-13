@@ -1,48 +1,44 @@
-# -*- coding: utf-8 -*-
-
-from odoo import models, fields
+from odoo import models, fields, _
 
 
 class ITTicketRejectWizard(models.TransientModel):
     _name = 'it.ticket.reject.wizard'
     _description = 'Reject Ticket Wizard'
 
-    # Ticket that is being rejected through this wizard
-    ticket_id = fields.Many2one('it.ticket', 'Ticket', required=True)
+    ticket_id = fields.Many2one(
+        'it.ticket',
+        string='Ticket',
+        required=True
+    )
 
-    # Reason provided by user for rejecting the ticket
-    rejection_reason = fields.Text('Rejection Reason', required=True)
+    rejection_reason = fields.Text(
+        string='Rejection Reason',
+        required=True
+    )
 
     def action_reject(self):
-        """Execute rejection workflow and close the wizard."""
+        self.ensure_one()
 
-        # Capture this BEFORE do_reject() runs — the state changes to
-        # 'rejected' as a result of the call below, and HR loses read
-        # access to the ticket the instant it leaves 'hr_approval'
-        # (by design). If we check state after the fact, it's already gone.
-        was_hr = self.ticket_id.state == 'hr_approval'
+        ticket = self.ticket_id
 
-        # Call main ticket reject logic with sudo to ensure access safety
-        self.ticket_id.sudo().do_reject(self.rejection_reason)
+        # Remember whether the current user is HR
+        is_hr = self.env.user.has_group(
+            'employee_profile_change_request.group_profile_change_hr_reviewer'
+        )
 
-        # ── SAFE REDIRECT ────────────────────────────────────────────────
-        # If HR just rejected, closing the wizard would make Odoo try to
-        # re-render the ticket form behind it — and fail with an Access
-        # Error, even though the rejection itself succeeded (same issue
-        # fixed in approve_wizard.py). Redirect HR to the "Pending HR
-        # Approval" list instead of the now-inaccessible record.
-        if was_hr:
-            action = self.env.ref('ticketing_it.action_it_ticket_pending_hr_approval', raise_if_not_found=False)
-            if action:
-                return {
-                    'type': 'ir.actions.act_window',
-                    'name': action.name,
-                    'res_model': 'it.ticket',
-                    'view_mode': 'list,form',
-                    'views': [(False, 'list'), (False, 'form')],
-                    'domain': [('state', '=', 'hr_approval')],
-                    'target': 'main',
-                }
+        # Execute rejection
+        ticket.sudo().do_reject(self.rejection_reason)
 
-        # Close wizard after rejection is processed
+        # HR loses access after rejection, so don't close the wizard.
+        if is_hr:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Pending HR Approval'),
+                'res_model': 'it.ticket',
+                'view_mode': 'list,form',
+                'views': [(False, 'list'), (False, 'form')],
+                'domain': [('state', '=', 'hr_approval')],
+                'target': 'current',
+            }
+
         return {'type': 'ir.actions.act_window_close'}

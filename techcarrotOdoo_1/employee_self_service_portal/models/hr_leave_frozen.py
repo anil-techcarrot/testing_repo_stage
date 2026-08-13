@@ -30,3 +30,36 @@ class HrLeaveAllocationFrozen(models.Model):
         string="Is Frozen Type",
         store=False,
     )
+
+
+class HrLeaveBackup(models.Model):
+    _inherit = 'hr.leave'
+
+    x_backup_type = fields.Selection(
+        [('internal', 'Within TechCarrot'),
+         ('external', 'Outside TechCarrot')],
+        string="Backup Type",
+    )
+
+    x_backup_employee_id = fields.Many2one(
+        'hr.employee',
+        string="Backup Person (Internal)",
+    )
+
+    x_backup_name = fields.Char(string="Backup Person Name")
+    x_backup_email = fields.Char(string="Backup Person Email")
+
+    x_backup_display = fields.Char(
+        string="Backup Person",
+        compute='_compute_x_backup_display',
+    )
+
+    @api.depends('x_backup_type', 'x_backup_employee_id', 'x_backup_name')
+    def _compute_x_backup_display(self):
+        for leave in self:
+            if leave.x_backup_type == 'internal' and leave.x_backup_employee_id:
+                leave.x_backup_display = f"{leave.x_backup_employee_id.name} (Internal)"
+            elif leave.x_backup_type == 'external' and leave.x_backup_name:
+                leave.x_backup_display = f"{leave.x_backup_name} (External)"
+            else:
+                leave.x_backup_display = "—"

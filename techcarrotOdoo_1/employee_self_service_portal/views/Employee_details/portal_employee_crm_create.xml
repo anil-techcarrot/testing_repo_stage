@@ -2,7 +2,7 @@
   <template id="portal_employee_crm_create" name="Create CRM Lead">
     <t t-call="portal.portal_layout">
       <div class="o_portal container my-4">
-        <h2>Create New Lead / Opportunity</h2>
+        <h2>Create New Opportunity</h2>
         <form action="/my/employee/crm/create" method="post" class="card p-3">
           <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
           <div class="mb-2">
@@ -19,7 +19,10 @@
                 </option>
               </t>
             </select>
+
             <small class="form-text text-muted">Search for existing customer.</small>
+
+
             <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
             <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>

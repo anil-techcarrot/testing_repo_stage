@@ -492,7 +492,7 @@
                                                     </li>
                                                     <li>
                                                         <a class="dropdown-item" href="#"
-                                                           onclick="duplicateLead({{ lead.id }})">
+                                                           t-attf-onclick="duplicateLead(#{lead.id})">
                                                             <i class="fa fa-copy me-2"></i>Duplicate
                                                         </a>
                                                     </li>
@@ -501,7 +501,7 @@
                                                     </li>
                                                     <li>
                                                         <a class="dropdown-item text-danger" href="#"
-                                                           onclick="deleteLead({{ lead.id }})">
+                                                           t-attf-onclick="deleteLead(#{lead.id})">
                                                             <i class="fa fa-trash me-2"></i>Delete
                                                         </a>
                                                     </li>
@@ -678,19 +678,36 @@
 
                     function duplicateLead(leadId) {
                     if (confirm('Are you sure you want to duplicate this lead?')) {
-                    // This would need backend implementation
-                    console.log('Duplicate lead:', leadId);
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    const formData = new URLSearchParams();
+                    formData.append('csrf_token', csrfToken);
+                    fetch(`/my/employee/crm/duplicate/${leadId}`, {
+                    method: 'POST',
+                    headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formData.toString()
+                    }).then(response => {
+                    if (response.ok) {
+                    location.reload();
+                    } else {
+                    alert('Error duplicating lead. Please try again.');
+                    }
+                    });
                     }
                     }
 
                     function deleteLead(leadId) {
                     if (confirm('Are you sure you want to delete this lead? This action cannot be undone.')) {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    const formData = new URLSearchParams();
+                    formData.append('csrf_token', csrfToken);
                     fetch(`/my/employee/crm/delete/${leadId}`, {
                     method: 'POST',
                     headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    }
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formData.toString()
                     }).then(response => {
                     if (response.ok) {
                     location.reload();

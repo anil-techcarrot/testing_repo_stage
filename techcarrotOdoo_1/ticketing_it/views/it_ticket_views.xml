@@ -177,7 +177,7 @@
                             <field name="submitted_date"/>
                         </group>
                         <group>
-                            <field name="subject" readonly="can_edit"/>
+                            <field name="subject" widget="text" readonly="can_edit"/>
                             <field name="required_date" readonly="can_edit"/>
                             <field name="line_manager_id" readonly="1"/>
                             <field name="it_manager_id" readonly="1"/>

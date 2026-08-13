@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ================= APPROVER GROUPS =================
+             Assign real users to these under Settings > Users > Groups.
+
+             Non Project Based -> HR -> Finance Executive -> CFO
+             Project Based     -> Project Manager -> Line Manager -> CEO -> CFO
+             (Project Manager / Line Manager are NOT groups — they are
+             resolved dynamically per record from project.project.user_id
+             and hr.employee.parent_id.user_id.) -->
+
+        <!-- Portal access group — defined here (not reused from
+             employee_self_service_portal) so this module works standalone
+             even against an ESS install where that group is commented out. -->
+        <record id="group_portal_expenses" model="res.groups">
+            <field name="name">Portal: Expenses Access</field>
+            <field name="comment">Users with access to Expense Claim Request functionality in portal</field>
+        </record>
+
+        <record id="group_expense_hr_approver" model="res.groups">
+            <field name="name">Expense Approver: HR</field>
+            <field name="comment">Approves Non Project Based Expense Claim Requests at the HR stage. Project Based claims skip HR entirely.</field>
+        </record>
+        <record id="group_expense_finance_approver" model="res.groups">
+            <field name="name">Expense Approver: Finance Executive</field>
+            <field name="comment">Approves Non Project Based Expense Claim Requests at the Finance Executive stage</field>
+        </record>
+        <record id="group_expense_ceo_approver" model="res.groups">
+            <field name="name">Expense Approver: CEO</field>
+            <field name="comment">Approves Project Based Expense Claim Requests at the CEO stage</field>
+        </record>
+        <record id="group_expense_cfo_approver" model="res.groups">
+            <field name="name">Expense Approver: CFO</field>
+            <field name="comment">Final approver on both chains. Also the one (with Finance) who can Mark as Paid and post the Accounting payment.</field>
+        </record>
+
+        <!-- ================= ACCESS RULES ================= -->
+
+        <!-- Portal employees manage their own requests, scoped to this
+             module's own group_portal_expenses (defined above). -->
+        <record id="rule_hr_expense_request_portal_user" model="ir.rule">
+            <field name="name">Portal: Manage Own Expense Claim Requests</field>
+            <field name="model_id" ref="model_hr_expense_request"/>
+            <field name="groups" eval="[(4, ref('group_portal_expenses'))]"/>
+            <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="rule_hr_expense_request_line_portal_user" model="ir.rule">
+            <field name="name">Portal: Manage Own Expense Claim Request Lines</field>
+            <field name="model_id" ref="model_hr_expense_request_line"/>
+            <field name="groups" eval="[(4, ref('group_portal_expenses'))]"/>
+            <field name="domain_force">[('request_id.employee_id.user_id', '=', user.id)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <record id="rule_hr_expense_request_approval_portal_user" model="ir.rule">
+            <field name="name">Portal: View Own Approval Trail</field>
+            <field name="model_id" ref="model_hr_expense_request_approval"/>
+            <field name="groups" eval="[(4, ref('group_portal_expenses'))]"/>
+            <field name="domain_force">[('request_id.employee_id.user_id', '=', user.id)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Approvers: write access to requests currently pending with them -->
+        <record id="rule_hr_expense_request_approver" model="ir.rule">
+            <field name="name">Expense Approvers: Requests pending their stage</field>
+            <field name="model_id" ref="model_hr_expense_request"/>
+            <field name="groups" eval="[(4, ref('group_expense_hr_approver')),
+                                        (4, ref('group_expense_finance_approver')),
+                                        (4, ref('group_expense_ceo_approver')),
+                                        (4, ref('group_expense_cfo_approver'))]"/>
+            <field name="domain_force">[('state', '=', 'submitted')]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Dynamic approvers for Project Based claims: Project Manager /
+             Line Manager are not a fixed group — scoped by domain instead. -->
+        <record id="rule_hr_expense_request_dynamic_approver" model="ir.rule">
+            <field name="name">Expense Approvers: Project Manager / Line Manager (dynamic)</field>
+            <field name="model_id" ref="model_hr_expense_request"/>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="domain_force">['|', ('project_manager_id', '=', user.id),
+                                         ('line_manager_id', '=', user.id)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Read-only full history — HR Managers and every approver role can
+             browse ALL Expense Claim Requests (not just what's pending with
+             them right now), so the backend list works as a real status
+             board. This does NOT grant write beyond the rules above. -->
+        <record id="rule_hr_expense_request_full_read" model="ir.rule">
+            <field name="name">Expense Claims: Full read access (status board)</field>
+            <field name="model_id" ref="model_hr_expense_request"/>
+            <field name="groups" eval="[(4, ref('hr.group_hr_manager')),
+                                        (4, ref('group_expense_hr_approver')),
+                                        (4, ref('group_expense_finance_approver')),
+                                        (4, ref('group_expense_ceo_approver')),
+                                        (4, ref('group_expense_cfo_approver'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="rule_hr_expense_request_approval_full_read" model="ir.rule">
+            <field name="name">Expense Claims: Full read access to approval trail</field>
+            <field name="model_id" ref="model_hr_expense_request_approval"/>
+            <field name="groups" eval="[(4, ref('hr.group_hr_manager')),
+                                        (4, ref('group_expense_hr_approver')),
+                                        (4, ref('group_expense_finance_approver')),
+                                        (4, ref('group_expense_ceo_approver')),
+                                        (4, ref('group_expense_cfo_approver'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+    </data>
+</odoo>

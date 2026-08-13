@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- CLASSIC dashboard (/my/ess/classic and, on some deployments, /my/ess
+         itself) — replace the old generic "Expenses" card with the new
+         Expense Claim Request card, in the exact same visual card style
+         already used on this page (card text-center h-100 shadow-sm). -->
+    <record id="view_portal_ess_dashboard_classic_expense_card" model="ir.ui.view">
+        <field name="name">portal.ess.dashboard.classic.expense.card</field>
+        <field name="inherit_id" ref="employee_self_service_portal.portal_ess_dashboard"/>
+        <field name="arch" type="xml">
+            <xpath expr="//t[@t-if='has_expenses_access']" position="replace">
+                <t t-if="has_expenses_access">
+                    <div class="col-md-4 mb-4">
+                        <div class="card text-center h-100 shadow-sm">
+                            <div class="card-body">
+                                <i class="fa fa-money fa-2x mb-2 text-warning"></i>
+                                <h5 class="card-title">
+                                    Expense Claim Request
+                                    <t t-if="expense_requests_pending and expense_requests_pending > 0">
+                                        <span class="badge badge-warning ml-2" t-esc="expense_requests_pending"/>
+                                    </t>
+                                </h5>
+                                <p class="card-text text-muted mb-2">
+                                    Project Based &amp; Non Project Based claims, with sub-category
+                                    policies and line-item attachments.
+                                </p>
+                                <div class="row text-center mt-2 mb-3">
+                                    <div class="col-4">
+                                        <small class="text-muted">Pending</small><br/>
+                                        <span class="badge badge-warning" t-esc="expense_requests_pending or 0"/>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">Total</small><br/>
+                                        <span class="badge badge-secondary" t-esc="expense_requests_count or 0"/>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">&#160;</small><br/>
+                                        <a href="/my/ess/expenses/new" class="badge badge-success" style="text-decoration:none;">
+                                            + New
+                                        </a>
+                                    </div>
+                                </div>
+                                <a href="/my/expenses" class="btn btn-outline-warning btn-sm w-100">
+                                    <i class="fa fa-list"></i> View Expenses
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ENHANCED dashboard (/my/ess/enhanced, and /my/ess on deployments
+         where enhanced is the default) — replace the original "Expenses"
+         card (the one right after the "Expenses Card" comment, just
+         before the Payslips card) with the new Expense Claim Request card,
+         plus an Approvals card for internal approvers. Targeting the
+         original card's own t-if="has_expenses_access" block directly
+         (via the unique "Expenses Card" comment right before it) instead of
+         assuming any anchor was pre-added to employee_self_service_portal —
+         this works against a stock, unmodified copy of that module. -->
+    <record id="view_portal_ess_dashboard_enhanced_expense_card" model="ir.ui.view">
+        <field name="name">portal.ess.dashboard.enhanced.expense.card</field>
+        <field name="inherit_id" ref="employee_self_service_portal.portal_ess_dashboard_enhanced"/>
+        <field name="arch" type="xml">
+            <xpath expr="//comment()[contains(., 'Expenses Card')]/following-sibling::t[@t-if='has_expenses_access'][1]"
+                   position="replace">
+
+                <!-- Expense Claim Request Card -->
+                <t t-if="has_expenses_access">
+                    <div class="col-md-4">
+                        <div class="module-card card border-0 shadow-sm h-100">
+                            <div class="card-body d-flex flex-column justify-content-between">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="icon-circle bg-warning bg-opacity-10 me-3">
+                                        <i class="fa fa-money fa-lg text-warning"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Expense Claim Request</h6>
+                                        <p class="text-muted mb-0 small">Project Based / Non Project Based, with attachments</p>
+                                    </div>
+                                </div>
+
+                                <div class="ticket-summary mb-3">
+                                    <div class="row text-center g-2">
+                                        <div class="col-6">
+                                            <div class="metric-box rounded-3 py-3"
+                                                 style="background:linear-gradient(90deg,#1B5E3A,#E58E26);">
+                                                <h4 class="text-white fw-bold mb-0"
+                                                    t-esc="expense_requests_count or 0"/>
+                                                <small class="text-white" style="opacity:0.9;">Total</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="metric-box rounded-3 py-3"
+                                                 style="background:linear-gradient(90deg,#E58E26,#C0392B);">
+                                                <h4 class="text-white fw-bold mb-0"
+                                                    t-esc="expense_requests_pending or 0"/>
+                                                <small class="text-white" style="opacity:0.9;">Pending</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <t t-if="expense_requests_recent">
+                                    <div class="mb-3">
+                                        <t t-foreach="expense_requests_recent[:2]" t-as="er">
+                                            <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                                <small class="text-truncate me-2" style="max-width:150px;">
+                                                    <t t-esc="er.name"/> - <t t-esc="er.subcategory_id.name"/>
+                                                </small>
+                                                <span t-attf-class="badge badge-{{
+                                                    'success' if er.state in ('approved', 'paid') else
+                                                    'danger' if er.state in ('rejected', 'cancelled') else
+                                                    'warning' if er.state == 'submitted' else
+                                                    'secondary'
+                                                }} badge-sm" style="font-size:0.65rem;">
+                                                    <t t-esc="dict(er._fields['state'].selection).get(er.state)"/>
+                                                </span>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </t>
+
+                                <div class="d-grid gap-2">
+                                    <a href="/my/ess/expenses/new" class="btn btn-warning btn-sm">
+                                        <i class="fa fa-plus me-1"></i> Create New Request
+                                    </a>
+                                    <a href="/my/expenses" class="btn btn-outline-warning btn-sm">
+                                        <i class="fa fa-list me-1"></i> View All Requests
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- Expense Claim Approvals Card -->
+                <t t-if="expense_approvals_pending_count and expense_approvals_pending_count > 0">
+                    <div class="col-md-6">
+                        <div class="module-card card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="icon-circle bg-warning bg-opacity-10 me-3">
+                                        <i class="fa fa-gavel fa-lg text-warning"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-1">Expense Claim Approvals</h5>
+                                        <p class="text-muted mb-0 small">
+                                            <t t-esc="expense_approvals_pending_count"/> request(s) awaiting your decision
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <a href="/my/expenses?filterby=in_progress" class="btn btn-warning btn-sm">
+                                        <i class="fa fa-gavel me-1"></i> Go to Approvals
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Expense Sub Category master data, seeded from the Power Apps
+             Sub_Category master list. Safe to edit in the backend afterwards
+             (noupdate="1" means these are only created once, on install). -->
+        <record id="expense_subcat_prb_tbr" model="hr.expense.subcategory">
+            <field name="name">Taxi Bill Reimbursement</field>
+            <field name="category">project_based</field>
+            <field name="sequence">10</field>
+            <field name="code">1</field>
+            <field name="internal_reference">PRB_TBR</field>
+            <field name="policy">3 types of Taxi Bill Reimbursements are there
+1. From Airport to Hotel / Home @ the time of joining
+2. From DIC Metro Station to Knowledge Village to &amp; for medical test
+3. Any other project related travels (Prior Approval Email Needed)</field>
+        </record>
+        <record id="expense_subcat_gen_tbr" model="hr.expense.subcategory">
+            <field name="name">Taxi Bill Reimbursement</field>
+            <field name="category">non_project_based</field>
+            <field name="sequence">20</field>
+            <field name="code">2</field>
+            <field name="internal_reference">GEN_TBR</field>
+            <field name="policy">3 types of Taxi Bill Reimbursements are there
+1. From Airport to Hotel / Home @ the time of joining
+2. From DIC Metro Station to Knowledge Village to &amp; for medical test
+3. Any other project related travels (Prior Approval Email Needed)</field>
+        </record>
+        <record id="expense_subcat_gen_eogo" model="hr.expense.subcategory">
+            <field name="name">EOGO</field>
+            <field name="category">non_project_based</field>
+            <field name="sequence">30</field>
+            <field name="code">3</field>
+            <field name="internal_reference">GEN_EOGO</field>
+            <field name="policy">If an employee referred one candidate to techcarrot, he joined &amp; completed 3 months, then the employee is eligible for this allowance.</field>
+        </record>
+        <record id="expense_subcat_prb_pdc" model="hr.expense.subcategory">
+            <field name="name">Per Diem Charges</field>
+            <field name="category">project_based</field>
+            <field name="sequence">40</field>
+            <field name="code">4</field>
+            <field name="internal_reference">PRB_PDC</field>
+            <field name="policy">Before applying, pls get an approval from line manager.</field>
+        </record>
+        <record id="expense_subcat_prb_at_rmb" model="hr.expense.subcategory">
+            <field name="name">Air Ticket Reimbursement</field>
+            <field name="category">project_based</field>
+            <field name="sequence">50</field>
+            <field name="internal_reference">PRB_AT_RMB</field>
+            <field name="policy">If joining or Repatriation Ticket is taken by employee, this will be reimbursed to employee</field>
+        </record>
+        <record id="expense_subcat_prb_fd_exp" model="hr.expense.subcategory">
+            <field name="name">Food Expenses</field>
+            <field name="category">project_based</field>
+            <field name="sequence">60</field>
+            <field name="internal_reference">PRB_FD_EXP</field>
+        </record>
+        <record id="expense_subcat_gen_acc_alw" model="hr.expense.subcategory">
+            <field name="name">Accommodation Allowance</field>
+            <field name="category">non_project_based</field>
+            <field name="sequence">70</field>
+            <field name="internal_reference">GEN_ACC_ALW</field>
+            <field name="policy">If an employee travelled from outside of UAE &amp; joined techcarrot, he is eligible for 7 days hotel accommodation. In case he didn't or partially consumed this allowance, then we will reimburse him @ AED 225 per day for the eligible days.</field>
+        </record>
+        <record id="expense_subcat_gen_med_ex_rmb" model="hr.expense.subcategory">
+            <field name="name">Medical Exp. Reimbursement</field>
+            <field name="category">non_project_based</field>
+            <field name="sequence">80</field>
+            <field name="internal_reference">GEN_MED_EX_RMB</field>
+            <field name="policy">Only those medical expenses which occurred to employee after joining &amp; before the medical insurance card start date. So before applying, please cross check with insurance card start date.</field>
+        </record>
+        <record id="expense_subcat_gen_pdc" model="hr.expense.subcategory">
+            <field name="name">Per Diem Charges</field>
+            <field name="category">non_project_based</field>
+            <field name="sequence">90</field>
+            <field name="internal_reference">GEN_PDC</field>
+            <field name="policy">Before applying, pls get an approval from line manager.</field>
+        </record>
+        <record id="expense_subcat_gen_at_rmb" model="hr.expense.subcategory">
+            <field name="name">Air Ticket Reimbursement</field>
+            <field name="category">non_project_based</field>
+            <field name="sequence">100</field>
+            <field name="internal_reference">GEN_AT_RMB</field>
+            <field name="policy">If joining or Repatriation Ticket is taken by employee, this will be reimbursed to employee.</field>
+        </record>
+        <record id="expense_subcat_gen_pc_cft" model="hr.expense.subcategory">
+            <field name="name">Police Clearance Certificate</field>
+            <field name="category">project_based</field>
+            <field name="sequence">110</field>
+            <field name="internal_reference">GEN_PC_CFT</field>
+            <field name="policy">This is approved if the certificate is obtained for techcarrot or customer. Expenses won't be reimbursed if it is for personal purpose. Pls upload the receipt of the request along with the application.</field>
+        </record>
+        <record id="expense_subcat_gen_apc" model="hr.expense.subcategory">
+            <field name="name">Parking Charges</field>
+            <field name="category">non_project_based</field>
+            <field name="sequence">120</field>
+            <field name="internal_reference">GEN_APC</field>
+            <field name="policy">Reimbursement</field>
+        </record>
+        <record id="expense_subcat_gen_sanda_me" model="hr.expense.subcategory">
+            <field name="name">Sales &amp; Marketing Expenses</field>
+            <field name="category">non_project_based</field>
+            <field name="sequence">130</field>
+            <field name="internal_reference">GEN_S&amp;A_ME</field>
+            <field name="policy">Reimbursement</field>
+        </record>
+        <record id="expense_subcat_gen_panda_stry" model="hr.expense.subcategory">
+            <field name="name">Printing &amp; Stationery</field>
+            <field name="category">non_project_based</field>
+            <field name="sequence">140</field>
+            <field name="internal_reference">GEN_P&amp;A_STRY</field>
+            <field name="policy">Reimbursable.</field>
+        </record>
+        <record id="expense_subcat_gen_fed_exp_dep" model="hr.expense.subcategory">
+            <field name="name">Visa Emirates Id expense for dependents</field>
+            <field name="category">non_project_based</field>
+            <field name="sequence">150</field>
+            <field name="internal_reference">GEN_FED_EXP_DEP</field>
+            <field name="policy">As per Employment Contract.</field>
+        </record>
+        <record id="expense_subcat_gen_adm_exp" model="hr.expense.subcategory">
+            <field name="name">Administrative Expenses</field>
+            <field name="category">non_project_based</field>
+            <field name="sequence">160</field>
+            <field name="internal_reference">GEN_ADM_EXP</field>
+            <field name="policy">Reimbursement.</field>
+        </record>
+        <record id="expense_subcat_gen_intw_exp" model="hr.expense.subcategory">
+            <field name="name">Interview Selection</field>
+            <field name="category">non_project_based</field>
+            <field name="sequence">170</field>
+            <field name="internal_reference">GEN_INTW_EXP</field>
+            <field name="policy">As soon as the candidate is selected by the customer, the employee who interviewed the candidate should send an email to respective account manager or recruiter, get an approval email from them with the rate per candidate &amp; request in one clique with the email PDF as attachment.</field>
+        </record>
+        <record id="expense_subcat_gen_fd_exp" model="hr.expense.subcategory">
+            <field name="name">Food Expenses</field>
+            <field name="category">non_project_based</field>
+            <field name="sequence">180</field>
+            <field name="internal_reference">GEN_FD_EXP</field>
+        </record>
+        <record id="expense_subcat_gen_tcr" model="hr.expense.subcategory">
+            <field name="name">Training and Certification Reimbursement</field>
+            <field name="category">non_project_based</field>
+            <field name="sequence">190</field>
+            <field name="internal_reference">GEN_TCR</field>
+            <field name="policy">Training and Certification Reimbursement</field>
+        </record>
+        <record id="expense_subcat_prb_ma" model="hr.expense.subcategory">
+            <field name="name">Medical Allowance</field>
+            <field name="category">project_based</field>
+            <field name="sequence">200</field>
+            <field name="internal_reference">PRB_MA</field>
+            <field name="policy">This Medical allowance is based on specific requirement of a client project and is subject to approvals from Client, Account Manager and HR.</field>
+        </record>
+        <record id="expense_subcat_prb_ta" model="hr.expense.subcategory">
+            <field name="name">Travel Allowance</field>
+            <field name="category">project_based</field>
+            <field name="sequence">210</field>
+            <field name="internal_reference">PRB_TA</field>
+            <field name="policy">This Travel allowance is based on specific requirement of a client project and is subject to approvals from Client, Account Manager and HR.</field>
+        </record>
+    </data>
+</odoo>

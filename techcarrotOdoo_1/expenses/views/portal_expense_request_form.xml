@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_expense_request_form" name="ESS - Create Expense Claim Request">
+        <t t-call="portal.portal_layout">
+            <div class="o_portal container my-4">
+
+                <nav aria-label="breadcrumb" class="mb-3">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="/my/ess"><i class="fa fa-tachometer"/> Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="/my/expenses">Expense Claim Requests</a>
+                        </li>
+                        <li class="breadcrumb-item active">New Request</li>
+                    </ol>
+                </nav>
+
+                <div class="row align-items-center mb-4">
+                    <div class="col-md-8">
+                        <h2 class="mb-1">
+                            <i class="fa fa-money text-warning me-2"/>
+                            New Expense Claim Request
+                        </h2>
+                        <p class="text-muted mb-0">Submit an expense reimbursement claim for approval.</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <a href="/my/expenses" class="btn btn-outline-secondary btn-sm">
+                            <i class="fa fa-list"/> View My Requests
+                        </a>
+                    </div>
+                </div>
+
+                <t t-if="error">
+                    <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                        <i class="fa fa-exclamation-triangle me-2"/>
+                        <t t-if="error_msg"><t t-esc="error_msg"/></t>
+                        <t t-else="">Failed to submit request. Please check the form and try again.</t>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"/>
+                    </div>
+                </t>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header text-white py-3"
+                         style="background: linear-gradient(135deg, #2D6A4F 0%, #E8450A 100%); border-radius: 8px 8px 0 0;">
+                        <h5 class="mb-0" style="font-size:18px; font-weight:700;">
+                            <i class="fa fa-plus-circle me-2"/>Expense Claim Request
+                        </h5>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <form action="/my/ess/expenses/submit" method="POST" enctype="multipart/form-data" id="expense_form">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                            <div class="row g-3">
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">
+                                        Expense Category <span class="text-danger">*</span>
+                                    </label>
+                                    <select name="expense_category" id="expense_category" class="form-select"
+                                            required="required" onchange="tcFilterExpenseSubcategory(this.value); tcToggleProjectFields(this.value);">
+                                        <option value="non_project_based" selected="selected">Non Project Based</option>
+                                        <option value="project_based">Project Based</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">
+                                        Expense Sub Category <span class="text-danger">*</span>
+                                    </label>
+                                    <select name="subcategory_id" id="subcategory_id" class="form-select"
+                                            required="required" onchange="tcShowPolicy(this)">
+                                        <option value="">-- Select Sub Category --</option>
+                                        <t t-foreach="subcategories" t-as="sc">
+                                            <option t-att-value="sc.id"
+                                                    t-att-data-category="sc.category"
+                                                    t-att-data-policy="sc.policy or ''">
+                                                <t t-esc="sc.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Currency <span class="text-danger">*</span></label>
+                                    <select name="currency_code" class="form-select" required="required">
+                                        <option value="AED" selected="selected">AED</option>
+                                        <option value="INR">INR</option>
+                                        <option value="PKR">PKR</option>
+                                        <option value="BHD">BHD</option>
+                                        <option value="USD">USD</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Policy</label>
+                                    <textarea id="policy_box" class="form-control bg-light" rows="3" readonly="readonly"
+                                              placeholder="Select a sub category to see its policy"/>
+                                </div>
+
+                                <div class="col-12" id="project_fields_wrapper" style="display:none;">
+                                    <div class="row g-3 border rounded p-3" style="background:#f8f9fa;">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Project Code</label>
+                                            <select name="project_id" id="project_id" class="form-select">
+                                                <option value="">-- Select Project --</option>
+                                                <t t-foreach="projects" t-as="proj">
+                                                    <option t-att-value="proj.id"
+                                                            t-att-data-manager="proj.user_id.name or ''">
+                                                        <t t-esc="proj.code or ''"/><t t-esc="' - ' if proj.code else ''"/><t t-esc="proj.name"/>
+                                                    </option>
+                                                </t>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Project Manager</label>
+                                            <div class="form-control bg-light" id="project_manager_box">—</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">Line Manager</label>
+                                            <div class="form-control bg-light">
+                                                <t t-if="employee.parent_id"><t t-esc="employee.parent_id.name"/></t>
+                                                <t t-else="">Not assigned</t>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label fw-bold">Expense Lines <span class="text-danger">*</span></label>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered align-middle" id="expense_lines_table">
+                                            <thead style="background:#1F3B1F; color:#fff;">
+                                                <tr>
+                                                    <th style="min-width:180px;">Description</th>
+                                                    <th style="min-width:150px;">Expense Date</th>
+                                                    <th style="min-width:90px;">Unit No</th>
+                                                    <th style="min-width:120px;">Unit Amount</th>
+                                                    <th style="min-width:180px;">Attachment</th>
+                                                    <th style="width:40px;"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="expense_lines_body">
+                                                <!-- first row rendered by JS on load -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-success btn-sm" onclick="tcAddExpenseLine()">
+                                        <i class="fa fa-plus"/> Add Line
+                                    </button>
+                                </div>
+
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold">Comments</label>
+                                    <textarea name="comments" class="form-control" rows="2"
+                                              placeholder="Any additional context for the approver"/>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Total Expense Amount</label>
+                                    <div class="form-control bg-light" id="total_amount_box">0.00</div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Submitted By</label>
+                                    <div class="form-control bg-light">
+                                        <i class="fa fa-user text-muted me-2"/>
+                                        <t t-esc="employee.name"/>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 mt-4">
+                                <a href="/my/ess" class="btn btn-outline-secondary">Cancel</a>
+                                <button type="submit" class="btn text-white fw-bold"
+                                        style="background:linear-gradient(135deg,#2D6A4F,#E8450A);border:none;">
+                                    <i class="fa fa-paper-plane me-1"/> Submit
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+            <![CDATA[
+            var tcLineIndex = 0;
+
+            function tcAddExpenseLine() {
+                var tbody = document.getElementById('expense_lines_body');
+                var idx = tcLineIndex++;
+                var row = document.createElement('tr');
+                row.innerHTML =
+                    '<td><input type="text" name="line_description[]" class="form-control form-control-sm" required="required"/></td>' +
+                    '<td><input type="date" name="line_expense_date[]" class="form-control form-control-sm"/></td>' +
+                    '<td><input type="number" name="line_unit_no[]" class="form-control form-control-sm" value="1" min="1" onchange="tcRecalcTotal()"/></td>' +
+                    '<td><input type="number" step="0.01" name="line_unit_amount[]" class="form-control form-control-sm line-amount" value="0" onchange="tcRecalcTotal()"/></td>' +
+                    '<td><input type="file" name="line_attachment[]" class="form-control form-control-sm"/></td>' +
+                    '<td><button type="button" class="btn btn-sm btn-outline-danger" onclick="tcRemoveExpenseLine(this)"><i class="fa fa-trash"/></button></td>';
+                tbody.appendChild(row);
+            }
+
+            function tcRemoveExpenseLine(btn) {
+                var tbody = document.getElementById('expense_lines_body');
+                if (tbody.rows.length > 1) {
+                    btn.closest('tr').remove();
+                    tcRecalcTotal();
+                }
+            }
+
+            function tcRecalcTotal() {
+                var rows = document.querySelectorAll('#expense_lines_body tr');
+                var total = 0;
+                rows.forEach(function(row) {
+                    var unitNo = parseFloat(row.querySelector('input[name="line_unit_no[]"]').value) || 0;
+                    var unitAmt = parseFloat(row.querySelector('input[name="line_unit_amount[]"]').value) || 0;
+                    total += unitNo * unitAmt;
+                });
+                document.getElementById('total_amount_box').innerText = total.toFixed(2);
+            }
+
+            function tcFilterExpenseSubcategory(category) {
+                var select = document.getElementById('subcategory_id');
+                var options = select.querySelectorAll('option');
+                options.forEach(function(opt) {
+                    if (!opt.value) { opt.style.display = ''; return; }
+                    opt.style.display = (opt.getAttribute('data-category') === category) ? '' : 'none';
+                });
+                select.value = '';
+                document.getElementById('policy_box').value = '';
+            }
+
+            function tcShowPolicy(select) {
+                var opt = select.options[select.selectedIndex];
+                document.getElementById('policy_box').value = opt ? (opt.getAttribute('data-policy') || '') : '';
+            }
+
+            function tcToggleProjectFields(category) {
+                var wrapper = document.getElementById('project_fields_wrapper');
+                wrapper.style.display = (category === 'project_based') ? '' : 'none';
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                tcAddExpenseLine();
+                tcFilterExpenseSubcategory('non_project_based');
+
+                var projectSelect = document.getElementById('project_id');
+                if (projectSelect) {
+                    projectSelect.addEventListener('change', function() {
+                        var opt = this.options[this.selectedIndex];
+                        document.getElementById('project_manager_box').innerText =
+                            opt ? (opt.getAttribute('data-manager') || '—') : '—';
+                    });
+                }
+            });
+            ]]>
+            </script>
+        </t>
+    </template>
+</odoo>

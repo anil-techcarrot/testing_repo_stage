@@ -43,7 +43,7 @@ class ResUsers(models.Model):
         cap_login = original_login[:1].upper() + original_login[1:]
         # 🔹 Variant 2: First letter lowercase
         low_login = original_login[:1].lower() + original_login[1:]
-        # 🔍 Try both variants
+        #  Try both variants
         user = self.sudo().search([('login', '=', cap_login)], limit=1)
         if not user:
             user = self.sudo().search([('login', '=', low_login)], limit=1)
@@ -70,22 +70,22 @@ class ResUsers(models.Model):
         # 🔹 Variant 2: First letter lowercase
         low_login = original_login[:1].lower() + original_login[1:]
         tried = []
-        # ✅ Try capitalized first
+        #  Try capitalized first
         try:
-            _logger.info("🔐 Trying capitalized login: %s", cap_login)
+            _logger.info(" Trying capitalized login: %s", cap_login)
             credential['login'] = cap_login
             return super()._login(credential, user_agent_env=user_agent_env)
         except Exception:
             tried.append(cap_login)
-            _logger.warning("❌ Capitalized login failed")
-        # ✅ Then try lowercase
+            _logger.warning(" Capitalized login failed")
+        #  Then try lowercase
         try:
-            _logger.info("🔐 Trying lowercase login: %s", low_login)
+            _logger.info(" Trying lowercase login: %s", low_login)
             credential['login'] = low_login
             return super()._login(credential, user_agent_env=user_agent_env)
         except Exception:
             tried.append(low_login)
-            _logger.error("🚨 Both attempts failed: %s", tried)
+            _logger.error(" Both attempts failed: %s", tried)
             raise AccessDenied()
  
  

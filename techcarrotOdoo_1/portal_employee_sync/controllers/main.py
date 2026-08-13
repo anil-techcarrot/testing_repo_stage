@@ -310,7 +310,6 @@ class PortalEmployeeSyncController(http.Controller):
                 'period_in_company': self._val(data.get('period_in_company')),
             }
 
-            # ✅ FIXED: was _get_company_from_address → now _get_company_from_payroll_location
             current_address_val = self._val(data.get('current_address'))
             company_id = self._get_company_from_payroll_location(payroll_location_raw)
             if company_id:
@@ -460,7 +459,10 @@ class PortalEmployeeSyncController(http.Controller):
                 return {'success': False, 'error': 'Invalid API key'}
 
             action = kwargs.get('action', 'get')
+
+
             admin_user = request.env.ref('base.user_admin')
+            request.update_env(user=admin_user.id)
 
             # ── UPDATE ──
             if action == 'update':
@@ -616,32 +618,22 @@ class PortalEmployeeSyncController(http.Controller):
 
                     # ══════════════════════════════════════════════════════
                     # STEP 4: Archive old employee
+                    #
+
                     # ══════════════════════════════════════════════════════
                     archived_email = f"{current_emp_code}_{old_email}" if old_email else old_email
+                    admin_env = request.env(user=admin_user.id)
                     try:
-                        request.env.cr.execute(
-                            """
-                            UPDATE hr_employee
-                            SET active = true,
-                                work_email = %s,
-                                work_contact_id = NULL
-                            WHERE id = %s
-                            """,
-                            (archived_email, employee.id,)
-                        )
-                        employee.invalidate_cache(
-                            ['active', 'work_email', 'work_contact_id'], [employee.id]
-                        )
+                        admin_env['hr.employee'].browse(employee.id).write({
+                            'active': True,
+                            'work_email': archived_email,
+                            'work_contact_id': False,
+                        })
                         _logger.info("✓ Old employee (%s) kept ACTIVE with renamed email: %s",
                                      current_emp_code, archived_email)
                     except Exception as e:
-                        _logger.warning("SQL update failed, ORM fallback: %s", str(e))
-                        employee.with_user(admin_user).write({
-                            'active': True,
-                            'work_email': archived_email,
-                        })
-                        _logger.info("✓ Old employee (%s) ORM fallback with email: %s",
-                                     current_emp_code, archived_email)
+                        _logger.warning("STEP 4 write failed: %s", str(e))
+                        raise
 
                     # ══════════════════════════════════════════════════════
                     # STEP 5: Build new_vals — work_email = original_email
@@ -739,9 +731,11 @@ class PortalEmployeeSyncController(http.Controller):
                                  new_emp.id, new_emp_code, new_emp.work_email)
 
                     try:
-                        if employee.image_1920:
+
+                        old_emp_admin = admin_env['hr.employee'].browse(employee.id)
+                        if old_emp_admin.image_1920:
                             new_emp.with_user(admin_user).write({
-                                'image_1920': employee.image_1920,
+                                'image_1920': old_emp_admin.image_1920,
                             })
                             _logger.info("✓ Employee image copied to new employee (ID: %s)", new_emp.id)
                         else:

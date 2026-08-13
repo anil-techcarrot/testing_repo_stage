@@ -456,6 +456,20 @@
                                     </div>
                                 </div>
 
+                                <div class="col-12" id="weekend-note-row" style="display:none;">
+                                    <div style="font-size:13px;color:#b03520;">
+                                        <i class="fa fa-info-circle me-1"></i>
+                                        Weekends aren't available for leave. The date was moved to the next working day.
+                                    </div>
+                                </div>
+
+                                <div class="col-12" id="holiday-note-row" style="display:none;">
+                                    <div style="font-size:13px;color:#b03520;">
+                                        <i class="fa fa-info-circle me-1"></i>
+                                        <span id="holiday-note-text"></span>
+                                    </div>
+                                </div>
+
 
                                 <div class="col-12" id="overlap-warning-row" style="display:none;">
                                     <div id="overlap-warning"
@@ -473,6 +487,23 @@
                                     </div>
                                 </div>
 
+                                <div class="col-12" id="pastdate-warning-row" style="display:none;">
+                                    <div id="pastdate-warning"
+                                         style="background:rgba(231,76,45,0.08);
+                border:1px solid rgba(231,76,45,0.35);
+                border-left:4px solid #E74C2D;
+                border-radius:8px;
+                padding:10px 16px;
+                display:flex;align-items:center;gap:10px;
+                font-size:13px;color:#b03520;">
+                                        <i class="fa fa-exclamation-triangle" style="font-size:16px;flex-shrink:0;"></i>
+                                        <span>
+                                            You are regularizing your past leaves. Once applied, it cannot be cancelled
+                                            by the initiator. for cancellation of such leaves, reach to HR.
+                                        </span>
+                                    </div>
+                                </div>
+
 
                                 <div class="col-12">
                                     <label for="reason" class="form-label fw-bold">
@@ -483,6 +514,88 @@
                                               placeholder="Enter reason for leave..."
                                               required="required" maxlength="250"></textarea>
                                     <div class="form-text">Maximum 250 characters</div>
+                                </div>
+
+                                <div class="col-12" id="backup-section" style="display:none;">
+                                    <div style="border:1px solid #e8edf2;border-radius:10px;padding:16px;background:#fafbfc;">
+                                        <label class="form-label fw-bold d-block mb-2">
+                                            Backup Person
+                                            <span style="color:var(--tc-saffron);" id="backup-required-star">*
+                                            </span>
+                                        </label>
+                                        <p class="text-muted mb-3" style="font-size:13px;">
+                                            <i class="fa fa-info-circle me-1"></i>
+                                            Since this leave is for future dates, please nominate someone to cover
+                                            for you.
+                                        </p>
+
+
+                                        <div class="d-flex gap-3 mb-3 flex-wrap">
+                                            <label class="d-flex align-items-center gap-2"
+                                                   style="cursor:pointer;font-size:14px;">
+                                                <input type="radio" name="backup_type" value="internal"
+                                                       id="backup_type_internal"/>
+                                                Within techcarrot
+                                            </label>
+                                            <label class="d-flex align-items-center gap-2"
+                                                   style="cursor:pointer;font-size:14px;">
+                                                <input type="radio" name="backup_type" value="external"
+                                                       id="backup_type_external"/>
+                                                Outside techcarrot
+                                            </label>
+                                        </div>
+
+
+                                        <div id="backup-internal-block" style="display:none;">
+                                            <div style="position:relative;">
+
+                                                <input type="text" id="backup_emp_search" class="form-control"
+                                                       autocomplete="off"
+                                                       placeholder="Type to search employee..."/>
+
+                                                <input type="hidden" name="backup_employee_id" id="backup_employee_id"
+                                                       value=""/>
+
+
+                                                <div id="backup_emp_results"
+                                                     style="display:none;position:absolute;z-index:1000;left:0;right:0;
+                    background:#fff;border:1px solid #e8edf2;border-radius:8px;
+                    box-shadow:0 6px 20px rgba(0,0,0,0.10);max-height:240px;
+                    overflow-y:auto;margin-top:2px;">
+
+                                                </div>
+                                            </div>
+
+
+                                            <script type="application/json" id="backup_emp_data">
+                                                [
+                                                <t t-foreach="backup_employees" t-as="emp">{"id":<t t-esc="emp.id"/>,
+                                                    "name": "<t t-esc="emp.name"/>"}
+                                                    <t t-if="not emp_last">,</t>
+                                                </t>
+                                                ]
+                                            </script>
+                                        </div>
+
+
+                                        <div id="backup-external-block" style="display:none;">
+                                            <div class="row g-2">
+                                                <div class="col-md-6">
+                                                    <input type="text" name="backup_name" id="backup_name"
+                                                           class="form-control" placeholder="Backup person name"
+                                                           pattern="[A-Za-z .'\-]+"
+                                                           title="Name can only contain letters, spaces, hyphens, apostrophes, and periods."/>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <input type="email" name="backup_email" id="backup_email"
+                                                           class="form-control" placeholder="Backup person email"/>
+                                                </div>
+                                            </div>
+                                            <div class="form-text">Both name and email are required for an external
+                                                backup.
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="col-12">
@@ -587,6 +700,9 @@
                                                     <t t-elif="leave.state == 'refuse'">
                                                         <span class="lv-badge lv-badge-rejected">Rejected</span>
                                                     </t>
+                                                    <t t-elif="leave.state == 'cancel'">
+                                                        <span class="lv-badge lv-badge-draft">Cancelled</span>
+                                                    </t>
                                                     <t t-elif="leave.state in ['confirm','validate1']">
                                                         <span class="lv-badge lv-badge-pending">Pending</span>
                                                     </t>
@@ -624,11 +740,39 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="text-center py-3 border-top">
-                                <a href="/my/leaves?filterby=all" class="fw-bold text-decoration-none"
-                                   style="color:var(--tc-green);font-size:14px;">View All Requests →
-                                </a>
-                            </div>
+                            <t t-if="total_pages &gt; 1">
+                                <div class="d-flex justify-content-center align-items-center gap-2 py-3 border-top">
+
+                                    <t t-if="page &gt; 1">
+                                        <a t-attf-href="/my/leaves/page/#{page - 1}?filterby=#{filterby}&amp;sortby=#{sortby}#leave-requests-section"
+                                           class="lv-filter-btn">‹ Prev
+                                        </a>
+                                    </t>
+                                    <t t-else="">
+                                        <span class="lv-filter-btn" style="opacity:0.4;cursor:not-allowed;">‹ Prev
+                                        </span>
+                                    </t>
+
+
+                                    <t t-foreach="range(1, total_pages + 1)" t-as="pnum">
+                                        <a t-attf-href="/my/leaves/page/#{pnum}?filterby=#{filterby}&amp;sortby=#{sortby}#leave-requests-section"
+                                           t-attf-class="lv-filter-btn #{page == pnum and 'lv-active' or ''}">
+                                            <t t-esc="pnum"/>
+                                        </a>
+                                    </t>
+
+
+                                    <t t-if="page &lt; total_pages">
+                                        <a t-attf-href="/my/leaves/page/#{page + 1}?filterby=#{filterby}&amp;sortby=#{sortby}#leave-requests-section"
+                                           class="lv-filter-btn">Next ›
+                                        </a>
+                                    </t>
+                                    <t t-else="">
+                                        <span class="lv-filter-btn" style="opacity:0.4;cursor:not-allowed;">Next ›
+                                        </span>
+                                    </t>
+                                </div>
+                            </t>
                         </t>
                         <t t-else="">
                             <div class="text-center py-5">
@@ -692,14 +836,17 @@
 
                 <script type="application/json" id="lv-existing-leaves">
                     [
-                    <t t-foreach="leave_requests" t-as="lr">
-                        <t t-if="lr.state not in ['refuse']">{"from":"<t
+                    <t t-foreach="all_active_leaves" t-as="lr">
+                        <t t-if="lr.state not in ['refuse','cancel']">{"from":"<t
                                 t-esc="lr.date_from.strftime('%Y-%m-%d') if lr.date_from else ''"/>","to":"<t
                                 t-esc="lr.date_to.strftime('%Y-%m-%d') if lr.date_to else ''"/>"}
                             <t t-if="not lr_last">,</t>
                         </t>
                     </t>
                     ]
+                </script>
+                <script type="application/json" id="lv-holidays">
+                    <t t-out="holiday_json"/>
                 </script>
 
 
@@ -715,6 +862,7 @@
                 var t = document.getElementById('date_to');
                 var d = document.getElementById('total_days_display');
                 var overlapRow = document.getElementById('overlap-warning-row');
+                var pastRow = document.getElementById('pastdate-warning-row');
                 var overlapText = document.getElementById('overlap-warning-text');
                 var submitBtn = document.querySelector('button[type="submit"].lv-submit-btn');
                 if(!f || !t || !d) return;
@@ -725,6 +873,19 @@
                 var raw = document.getElementById('lv-existing-leaves');
                 if(raw) existingLeaves = JSON.parse(raw.textContent || '[]');
                 } catch(e){ existingLeaves = []; }
+
+                var holidayMap = {};
+                try {
+                var hEl = document.getElementById('lv-holidays');
+                if(hEl){
+                var ta = document.createElement('textarea');
+                ta.innerHTML = hEl.textContent || '{}';
+                holidayMap = JSON.parse(ta.value || '{}');
+                }
+                } catch(e){ holidayMap = {}; }
+
+                var holidayNote = document.getElementById('holiday-note-row');
+                var holidayNoteText = document.getElementById('holiday-note-text');
 
 
                 function countWorkdays(from, to){
@@ -746,12 +907,43 @@
                 return y + '-' + m + '-' + day;
                 }
 
+                var weekendNote = document.getElementById('weekend-note-row');
+
                 function snapToWorkday(input){
-                if(!input.value) return;
+                if(!input.value) return null;
                 var dt = new Date(input.value + 'T00:00:00');
+                var hitHoliday = null;
+                var moved = false;
+                for(var guard = 0; guard &lt; 60; guard++){
                 var w = dt.getDay();
-                if(w === 6){ dt.setDate(dt.getDate() + 2); input.value = toStr(dt); }
-                else if(w === 0){ dt.setDate(dt.getDate() + 1); input.value = toStr(dt); }
+                var ymd = toStr(dt);
+                if(w === 6){ dt.setDate(dt.getDate() + 2); moved = true; continue; }
+                if(w === 0){ dt.setDate(dt.getDate() + 1); moved = true; continue; }
+                if(holidayMap[ymd]){
+                hitHoliday = holidayMap[ymd];
+                dt.setDate(dt.getDate() + 1);
+                moved = true;
+                continue;
+                }
+                break;
+                }
+                if(moved){ input.value = toStr(dt); }
+                return { moved: moved, holiday: hitHoliday };
+                }
+
+                function showHolidayNote(name){
+                if(!holidayNote || !holidayNoteText) return;
+                holidayNoteText.textContent =
+                name + ' is a public holiday, so the date was moved to the next '
+                + 'working day. You can adjust the dates if needed.';
+                holidayNote.style.display = 'block';
+                setTimeout(function(){ if(holidayNote) holidayNote.style.display = 'none'; }, 6000);
+                }
+
+                function showWeekendNote(){
+                if(!weekendNote) return;
+                weekendNote.style.display = 'block';
+                setTimeout(function(){ if(weekendNote) weekendNote.style.display = 'none'; }, 5000);
                 }
 
                 function nextWorkday(str){
@@ -789,6 +981,8 @@
                 }
 
                 function updateTotal(){
+                if (window.__essBackupRefresh) { window.__essBackupRefresh(); }
+                checkPastDate();
                 if(!f.value || !t.value){
                 d.textContent = '—'; d.style.color = '';
                 hideOverlap();
@@ -823,7 +1017,20 @@
                 overlapRow.style.display = 'block';
                 d.style.color = '#c0392b';
 
+
                 if(submitBtn){ submitBtn.disabled = true; submitBtn.style.opacity = '0.5'; }
+                }
+
+                function todayYMD(){
+                var d = new Date(); d.setHours(0,0,0,0);
+                var y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'),
+                da=String(d.getDate()).padStart(2,'0');
+                return y+'-'+m+'-'+da;
+                }
+                function checkPastDate(){
+                if(!pastRow) return;
+                var isPast = f.value &amp;&amp; f.value &lt; todayYMD();
+                pastRow.style.display = isPast ? 'block' : 'none';
                 }
 
                 function hideOverlap(){
@@ -834,7 +1041,11 @@
 
 
                 f.addEventListener('change', function(){
-                snapToWorkday(f);
+                var r = snapToWorkday(f);
+                if(r &amp;&amp; r.moved){
+                if(r.holiday){ showHolidayNote(r.holiday); }
+                else { showWeekendNote(); }
+                }
                 if(f.value){
                 t.setAttribute('min', f.value);
                 if(t.value &amp;&amp; t.value &lt; f.value){ t.value = f.value; snapToWorkday(t); }
@@ -842,8 +1053,30 @@
                 updateTotal();
                 });
 
+                t.addEventListener('change', function(){
+                var r = snapToWorkday(t);
+                if(r &amp;&amp; r.moved){
+                if(r.holiday){ showHolidayNote(r.holiday); }
+                else { showWeekendNote(); }
+                }
+                updateTotal();
+                });
 
-                t.addEventListener('change', function(){ snapToWorkday(t); updateTotal(); });
+
+                var resetBtn = document.querySelector('button[type="reset"]');
+                if(resetBtn){
+                    resetBtn.addEventListener('click', function(){
+                        setTimeout(function(){
+                            if(d){ d.textContent = '—'; d.style.color = ''; }
+                            if(overlapRow) overlapRow.style.display = 'none';
+                            if(pastRow) pastRow.style.display = 'none';
+                            if(weekendNote) weekendNote.style.display = 'none';
+                            if(holidayNote) holidayNote.style.display = 'none';
+                            if(window.__essBackupRefresh) window.__essBackupRefresh();
+                            if(submitBtn){ submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+                        }, 0);
+                    });
+                }
 
 
                 var requireDocMap = {};
@@ -902,6 +1135,159 @@
                 }
                 }
                 })();
+            </script>
+            <script type="text/javascript">
+                //<![CDATA[
+            function initEssBackup(){
+                var dateTo = document.getElementById('date_to');
+                var section = document.getElementById('backup-section');
+                var radioInt = document.getElementById('backup_type_internal');
+                var radioExt = document.getElementById('backup_type_external');
+                var blockInt = document.getElementById('backup-internal-block');
+                var blockExt = document.getElementById('backup-external-block');
+                var empSelect = document.getElementById('backup_employee_id');
+                var empSearch  = document.getElementById('backup_emp_search');
+                var empResults = document.getElementById('backup_emp_results');
+                var empData = [];
+                try {
+                    var empRaw = document.getElementById('backup_emp_data');
+                    if(empRaw) empData = JSON.parse(empRaw.textContent || '[]');
+                } catch(e){ empData = []; }
+                var extName = document.getElementById('backup_name');
+                var extEmail = document.getElementById('backup_email');
+                if(!dateTo || !section) return;
+
+                function todayStr(){
+                var d = new Date(); d.setHours(0,0,0,0);
+                var y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), da=String(d.getDate()).padStart(2,'0');
+                return y+'-'+m+'-'+da;
+                }
+
+                function isFuture(){
+                if(!dateTo.value) return false;
+                return dateTo.value > todayStr(); // strictly after today
+                }
+
+                function clearBackup(){
+                if(radioInt) radioInt.checked = false;
+                if(radioExt) radioExt.checked = false;
+                if(empSelect) empSelect.value = '';
+                if(extName) extName.value = '';
+                if(extEmail) extEmail.value = '';
+                if(empSearch) empSearch.value = '';
+                if(empSelect) empSelect.value = '';
+                hideResults();
+
+                }
+
+                function setReq(el, on){
+                if(!el) return;
+                if(on){ el.setAttribute('required','required'); }
+                else { el.removeAttribute('required'); }
+                }
+
+                function applyRequired(){
+                var future = isFuture();
+                var wantInt = future && radioInt && radioInt.checked;
+                var wantExt = future && radioExt && radioExt.checked;
+                setReq(extName, wantExt);
+                setReq(extEmail, wantExt);
+                }
+
+                function refreshSection(){
+                if(isFuture()){
+                section.style.display = 'block';
+                } else {
+                section.style.display = 'none';
+                clearBackup();
+                if(blockInt) blockInt.style.display = 'none';
+                if(blockExt) blockExt.style.display = 'none';
+                }
+                applyRequired();
+                }
+
+                function showInternal(){
+                if(blockInt) blockInt.style.display = 'block';
+                if(blockExt) blockExt.style.display = 'none';
+                if(extName) extName.value = '';
+                if(extEmail) extEmail.value = '';
+                applyRequired();
+                }
+                function showExternal(){
+                if(blockExt) blockExt.style.display = 'block';
+                if(blockInt) blockInt.style.display = 'none';
+                if(empSelect) empSelect.value = '';
+                applyRequired();
+                }
+
+                dateTo.addEventListener('change', refreshSection);
+                if(radioInt) radioInt.addEventListener('change', showInternal);
+                if(radioExt) radioExt.addEventListener('change', showExternal);
+
+                window.__essBackupRefresh = refreshSection;
+
+                function renderResults(q){
+                    if(!empResults) return;
+                    q = (q || '').toLowerCase();
+                    var html = '';
+                    var count = 0;
+                    for(var i=0;i<empData.length;i++){
+                        var name = (empData[i].name || '');
+                        if(!q || name.toLowerCase().indexOf(q) !== -1){
+                            html += '<div class="backup-emp-option" data-id="'+empData[i].id+'" '
+                                 +  'style="padding:8px 12px;cursor:pointer;font-size:14px;border-bottom:1px solid #f0f3f7;">'
+                                 +  name.replace(/</g,'&lt;')
+                                 +  '</div>';
+                            count++;
+                            if(count >= 50) { break; }
+                        }
+                    }
+                    if(!html){
+                        html = '<div style="padding:8px 12px;color:#8a94a6;font-size:13px;">No matches</div>';
+                    }
+                    empResults.innerHTML = html;
+                    empResults.style.display = 'block';
+                }
+
+                function hideResults(){
+                    if(empResults) empResults.style.display = 'none';
+                }
+
+                if(empSearch && empResults && empSelect){
+
+                    empSearch.addEventListener('input', function(){
+                        empSelect.value = '';
+                        renderResults(empSearch.value);
+                    });
+
+                    empSearch.addEventListener('focus', function(){
+                        renderResults(empSearch.value);
+                    });
+
+                    empResults.addEventListener('click', function(ev){
+                        var opt = ev.target.closest ? ev.target.closest('.backup-emp-option')
+                                                    : null;
+                        if(!opt) return;
+                        empSelect.value = opt.getAttribute('data-id');
+                        empSearch.value = opt.textContent;
+                        hideResults();
+                    });
+
+                    document.addEventListener('click', function(ev){
+                        if(ev.target !== empSearch && !empResults.contains(ev.target)){
+                            hideResults();
+                        }
+                    });
+                }
+
+            refreshSection();
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initEssBackup);
+            } else {
+                initEssBackup();
+            }
+            //]]>
             </script>
 
         </t>
@@ -1076,6 +1462,7 @@
                                         </div>
                                     </t>
 
+
                                     <t t-if="attachments">
                                         <div class="lv-detail-card mb-3">
                                             <h6 class="mb-2">
@@ -1088,7 +1475,7 @@
                                                         <i class="fa fa-file-o me-1 text-muted"></i>
                                                         <t t-esc="att.name"/>
                                                     </span>
-                                                   <a t-attf-href="/web/content/#{att.id}?access_token=#{att.access_token}&amp;download=true"
+                                                    <a t-attf-href="/web/content/#{att.id}?access_token=#{att.access_token}&amp;download=true"
                                                        class="btn btn-sm"
                                                        style="border:1px solid var(--tc-green);color:var(--tc-green);"
                                                        target="_blank">
@@ -1123,21 +1510,20 @@
                         </t>
 
 
-                        <t t-if="leave.state in ['draft', 'confirm']">
+                        <t t-if="can_cancel">
                             <div class="card border-0 shadow-sm mb-4"
                                  style="border-radius:12px;border-left:4px solid var(--tc-saffron) !important;">
                                 <div class="card-body p-4">
                                     <h6 class="fw-bold mb-2" style="color:#1B2A4A;">Cancel This Request</h6>
                                     <p class="text-muted mb-3" style="font-size:14px;">
-                                        This leave request is still pending. You can cancel it if your plans have
-                                        changed.
+                                        You can cancel this leave up until it starts.
                                     </p>
                                     <form t-attf-action="/my/leaves/#{leave.id}/cancel" method="POST">
                                         <input type="hidden" name="csrf_token"
                                                t-att-value="request.csrf_token()"/>
                                         <button type="submit" class="btn fw-bold px-4"
                                                 style="background:var(--tc-saffron);color:#fff;
-                                                       border:none;border-radius:8px;"
+                               border:none;border-radius:8px;"
                                                 onclick="return confirm('Are you sure you want to cancel this leave request?');">
                                             <i class="fa fa-trash me-2"></i>Cancel Leave Request
                                         </button>
@@ -1210,7 +1596,9 @@
 
                 <nav aria-label="breadcrumb" class="mb-3">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/my/ess">Dashboard</a></li>
+                        <li class="breadcrumb-item">
+                            <a href="/my/ess">Dashboard</a>
+                        </li>
                         <li class="breadcrumb-item active">Approvals</li>
                     </ol>
                 </nav>
@@ -1219,13 +1607,17 @@
                 <p class="text-muted mb-4">Leave requests from your team.</p>
 
                 <t t-if="success_message">
-                    <div class="alert alert-success"><t t-esc="success_message"/></div>
+                    <div class="alert alert-success">
+                        <t t-esc="success_message"/>
+                    </div>
                 </t>
                 <t t-if="error">
-                    <div class="alert alert-danger"><t t-esc="error_message or 'An error occurred.'"/></div>
+                    <div class="alert alert-danger">
+                        <t t-esc="error_message or 'An error occurred.'"/>
+                    </div>
                 </t>
 
-                <!-- Filter buttons -->
+
                 <div class="d-flex flex-wrap gap-2 mb-3">
                     <t t-foreach="searchbar_filters.items()" t-as="flt">
                         <t t-set="fkey" t-value="flt[0]"/>
@@ -1248,41 +1640,63 @@
                                     <th>To</th>
                                     <th>Days</th>
                                     <th>Status</th>
-                                    <t t-if="filterby == 'pending'"><th>Action</th></t>
+                                    <t t-if="filterby == 'pending'">
+                                        <th>Action</th>
+                                    </t>
                                 </tr>
                             </thead>
                             <tbody>
                                 <t t-foreach="leaves" t-as="lv">
                                     <tr>
-                                        <td><t t-esc="lv.employee_id.name"/></td>
-                                        <td><t t-esc="lv.holiday_status_id.name"/></td>
-                                        <td><t t-esc="lv.request_date_from and lv.request_date_from.strftime('%d/%m/%Y') or '—'"/></td>
-                                        <td><t t-esc="lv.request_date_to and lv.request_date_to.strftime('%d/%m/%Y') or '—'"/></td>
-                                        <td><t t-esc="'%.2f' % lv.number_of_days"/></td>
+                                        <td>
+                                            <t t-esc="lv.employee_id.name"/>
+                                        </td>
+                                        <td>
+                                            <t t-esc="lv.holiday_status_id.name"/>
+                                        </td>
+                                        <td>
+                                            <t t-esc="lv.request_date_from and lv.request_date_from.strftime('%d/%m/%Y') or '—'"/>
+                                        </td>
+                                        <td>
+                                            <t t-esc="lv.request_date_to and lv.request_date_to.strftime('%d/%m/%Y') or '—'"/>
+                                        </td>
+                                        <td>
+                                            <t t-esc="'%.2f' % lv.number_of_days"/>
+                                        </td>
                                         <td>
                                             <t t-if="lv.state == 'validate'">
-                                                <span style="background:rgba(44,91,50,0.12);color:#1f4324;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;">Approved</span>
+                                                <span style="background:rgba(44,91,50,0.12);color:#1f4324;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;">
+                                                    Approved
+                                                </span>
                                             </t>
                                             <t t-elif="lv.state == 'refuse'">
-                                                <span style="background:#fdecea;color:#c0392b;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;">Rejected</span>
+                                                <span style="background:#fdecea;color:#c0392b;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;">
+                                                    Rejected
+                                                </span>
                                             </t>
                                             <t t-else="">
-                                                <span style="background:rgba(231,76,45,0.12);color:#b03520;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;">Pending</span>
+                                                <span style="background:rgba(231,76,45,0.12);color:#b03520;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;">
+                                                    Pending
+                                                </span>
                                             </t>
                                         </td>
                                         <t t-if="filterby == 'pending'">
                                             <td>
                                                 <div class="d-flex gap-2">
-                                                    <form t-attf-action="/my/approvals/#{lv.id}/approve" method="POST" style="display:inline;">
-                                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                    <form t-attf-action="/my/approvals/#{lv.id}/approve" method="POST"
+                                                          style="display:inline;">
+                                                        <input type="hidden" name="csrf_token"
+                                                               t-att-value="request.csrf_token()"/>
                                                         <button type="submit" class="btn btn-sm text-white"
                                                                 style="background:#2C5B32;border:none;"
                                                                 onclick="return confirm('Approve this leave request?');">
                                                             <i class="fa fa-check me-1"></i>Approve
                                                         </button>
                                                     </form>
-                                                    <form t-attf-action="/my/approvals/#{lv.id}/reject" method="POST" style="display:inline;">
-                                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                    <form t-attf-action="/my/approvals/#{lv.id}/reject" method="POST"
+                                                          style="display:inline;">
+                                                        <input type="hidden" name="csrf_token"
+                                                               t-att-value="request.csrf_token()"/>
                                                         <button type="submit" class="btn btn-sm text-white"
                                                                 style="background:#E74C2D;border:none;"
                                                                 onclick="return confirm('Reject this leave request?');">
@@ -1306,6 +1720,7 @@
                 </t>
 
             </div>
+
         </t>
     </template>
 

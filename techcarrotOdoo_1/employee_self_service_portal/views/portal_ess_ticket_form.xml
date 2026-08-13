@@ -162,7 +162,9 @@
                                     <textarea name="description" id="description" class="form-control" rows="5"
                                               placeholder="Describe the issue in detail:&#10;- What happened?&#10;- When did it start?&#10;- What steps did you try?"
                                               required="required" maxlength="1000"/>
-                                    <div class="form-text">Please provide as much detail as possible (max 1000 characters).</div>
+                                    <div class="form-text">Please provide as much detail as possible (max 1000
+                                        characters).
+                                    </div>
                                 </div>
 
                                 <!-- Attachment -->
@@ -364,9 +366,17 @@
                     background:white!important; transition:all 0.2s ease!important; max-width:180px!important;
                     margin:0 auto!important; white-space:nowrap!important; }
                     .tc-view-btn:hover { background:#E8450A!important; color:white!important; }
-                    .tc-ticket-card { border-left:4px solid #2D6A4F!important; transition:box-shadow 0.2s
-                    ease!important; }
+                    .tc-ticket-card {
+                    border-top:4px solid #2D6A4F!important;
+                    border-right:4px solid #2D6A4F!important;
+                    border-bottom:4px solid #2D6A4F!important;
+                    border-left:4px solid #2D6A4F!important;
+                    transition:box-shadow 0.2s ease!important;
+                    margin-bottom:24px!important;
+                    }
                     .tc-ticket-card:hover { box-shadow:0 6px 20px rgba(0,0,0,0.12)!important; }
+                    .tc-subject-text { word-break:break-word!important; overflow-wrap:break-word!important;
+                    white-space:normal!important; line-height:1.4!important; }
                 </style>
 
                 <nav aria-label="breadcrumb" class="mb-3">
@@ -442,7 +452,7 @@
                                                         <t t-esc="ticket.ticket_type_id.name"/>
                                                     </t>
                                                 </p>
-                                                <p class="text-muted mb-0" style="font-size:13px;">
+                                                <p class="text-muted mb-0 tc-subject-text" style="font-size:13px;">
                                                     <t t-esc="ticket.subject"/>
                                                 </p>
                                             </div>
@@ -477,7 +487,8 @@
                                                 </small>
                                                 <span style="font-size:14px;">
                                                     <i class="fa fa-clock-o me-1" style="color:#E8450A;"/>
-                                                    <span class="tc-local-time" t-att-data-utc="ticket.create_date and ticket.create_date.isoformat() + 'Z'">
+                                                    <span class="tc-local-time"
+                                                          t-att-data-utc="ticket.create_date and ticket.create_date.isoformat() + 'Z'">
                                                         <t t-esc="ticket.create_date.strftime('%Y-%m-%d %H:%M') if ticket.create_date else ''"/>
                                                     </span>
                                                 </span>
@@ -636,7 +647,8 @@
                                         <p class="mb-0" style="font-size:14px;">
                                             <i class="fa fa-calendar me-1" style="color:#2D6A4F;"/>
                                             <t t-if="ticket.submitted_date">
-                                                <span class="tc-local-time" t-att-data-utc="ticket.submitted_date.isoformat() + 'Z'">
+                                                <span class="tc-local-time"
+                                                      t-att-data-utc="ticket.submitted_date.isoformat() + 'Z'">
                                                     <t t-esc="ticket.submitted_date.strftime('%Y-%m-%d %H:%M')"/>
                                                 </span>
                                             </t>

@@ -52,6 +52,7 @@
                             <group>
                                 <field name="company_id"/>
                                 <field name="due_on"/>
+                                <field name="compliance_month"/>
                                 <field name="complied_on"/>
                                 <field name="legend"/>
                                 <field name="attachment_count" readonly="1"/>

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_report_techcarrot_credit_note" model="ir.actions.report">
+        <field name="name">Tax Credit Note</field>
+        <field name="model">account.move</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">techcarrot_credit_note_report.report_credit_note_document</field>
+        <field name="report_file">techcarrot_credit_note_report.report_credit_note_document</field>
+        <field name="print_report_name">'Tax Credit Note - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_credit_note_document">
+        <t t-foreach="docs" t-as="o">
+            <t t-if="o.move_type == 'out_refund'">
+                <div class="page" style="font-family: Arial, Helvetica, sans-serif; color:#333; padding: 10px 20px;">
+
+                    <table style="width:100%; border-collapse:collapse; margin-bottom: 25px;">
+                        <tr>
+                            <td style="width:60%; vertical-align:top;">
+                                <span style="font-size:28px; font-weight:bold;">
+                                    <span style="color:#3d7a3d;">tech</span><span style="color:#e06a1f;">carrot</span>
+                                </span>
+                                <div style="font-size:9px; letter-spacing:1px; color:#555; margin-top:2px;">
+                                    DIGITAL TRANSFORMATION PARTNER
+                                </div>
+                            </td>
+                            <td style="width:40%; text-align:right; vertical-align:top;">
+                                <div style="font-size:24px; color:#333;">Tax Credit Note</div>
+                                <div style="font-size:11px; color:#555; margin-top:4px;">
+                                    # <span t-field="o.name"/>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table style="width:100%; border-collapse:collapse; margin-bottom: 20px;">
+                        <tr>
+                            <td style="width:60%; vertical-align:top; font-size:10px; color:#333; line-height:1.5;">
+                                <div style="font-weight:bold;" t-field="o.company_id.name"/>
+                                <div t-field="o.company_id.partner_id.street"/>
+                                <div t-field="o.company_id.partner_id.street2"/>
+                                <div>
+                                    <span t-field="o.company_id.partner_id.city"/>,
+                                    <span t-field="o.company_id.partner_id.country_id.name"/>
+                                </div>
+                                <div t-if="o.company_id.vat">TRN <span t-field="o.company_id.vat"/></div>
+                            </td>
+                            <td style="width:40%; text-align:right; vertical-align:top;">
+                                <div style="font-size:9px; color:#777;">Credits Remaining</div>
+                                <div style="font-size:16px; font-weight:bold; color:#333;">
+                                    <span t-field="o.currency_id.symbol"/><span t-field="o.amount_residual"
+                                          t-options='{"widget": "float", "precision": 2}'/>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table style="width:100%; border-collapse:collapse; margin-bottom: 20px;">
+                        <tr>
+                            <td style="width:55%; vertical-align:top; font-size:10px; line-height:1.5;">
+                                <div style="color:#777; font-size:9px;">Bill To</div>
+                                <div style="font-weight:bold;" t-field="o.partner_id.name"/>
+                                <div t-field="o.partner_id.street"/>
+                                <div t-field="o.partner_id.street2"/>
+                                <div>
+                                    <span t-field="o.partner_id.city"/>,
+                                    <span t-field="o.partner_id.country_id.name"/>
+                                </div>
+                                <div t-if="o.partner_id.vat">TRN <span t-field="o.partner_id.vat"/></div>
+                            </td>
+                            <td style="width:45%; vertical-align:top; font-size:10px;">
+                                <table style="width:100%;">
+                                    <tr>
+                                        <td style="color:#777; padding:2px 0;">Credit Date :</td>
+                                        <td style="text-align:right; padding:2px 0;">
+                                            <span t-field="o.invoice_date"/>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="o.ref">
+                                        <td style="color:#777; padding:2px 0;">PO# :</td>
+                                        <td style="text-align:right; padding:2px 0;">
+                                            <span t-field="o.ref"/>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="o.reversed_entry_id">
+                                        <td style="color:#777; padding:2px 0;">Invoice# :</td>
+                                        <td style="text-align:right; padding:2px 0;">
+                                            <span t-field="o.reversed_entry_id.name"/>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="o.reversed_entry_id">
+                                        <td style="color:#777; padding:2px 0;">Invoice Date :</td>
+                                        <td style="text-align:right; padding:2px 0;">
+                                            <span t-field="o.reversed_entry_id.invoice_date"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table style="width:100%; border-collapse:collapse; margin-bottom: 10px;">
+                        <thead>
+                            <tr style="background-color:#333; color:#fff; font-size:9px;">
+                                <td style="padding:6px 8px;">#</td>
+                                <td style="padding:6px 8px;">Item &amp; Description</td>
+                                <td style="padding:6px 8px; text-align:right;">Qty</td>
+                                <td style="padding:6px 8px; text-align:right;">Rate</td>
+                                <td style="padding:6px 8px; text-align:right;">Amount</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-set="line_no" t-value="0"/>
+                            <t t-foreach="o.invoice_line_ids.filtered(lambda l: l.display_type == 'product')" t-as="line">
+                                <t t-set="line_no" t-value="line_no + 1"/>
+                                <tr style="font-size:9px; border-bottom:1px solid #eee;">
+                                    <td style="padding:6px 8px; vertical-align:top;"><span t-esc="line_no"/></td>
+                                    <td style="padding:6px 8px; vertical-align:top;"><span t-field="line.name"/></td>
+                                    <td style="padding:6px 8px; text-align:right; vertical-align:top;"><span t-field="line.quantity"/></td>
+                                    <td style="padding:6px 8px; text-align:right; vertical-align:top;"><span t-field="line.price_unit"/></td>
+                                    <td style="padding:6px 8px; text-align:right; vertical-align:top;"><span t-field="line.price_subtotal"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                    <table style="width:100%; border-collapse:collapse; margin-bottom: 25px;">
+                        <tr>
+                            <td style="width:70%;"></td>
+                            <td style="width:30%; font-size:10px; padding:4px 8px; text-align:right; border-top:1px solid #ccc;">
+                                Sub Total
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td style="font-size:10px; padding:4px 8px; text-align:right;">
+                                <span t-field="o.amount_untaxed"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td style="font-size:11px; font-weight:bold; padding:4px 8px; text-align:right; border-top:1px solid #ccc;">
+                                Total <span t-field="o.currency_id.symbol"/><span t-field="o.amount_total"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td style="font-size:10px; font-weight:bold; padding:6px 8px; text-align:right; background-color:#f2f2f2;">
+                                Credits Remaining <span t-field="o.currency_id.symbol"/><span t-field="o.amount_residual"/>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div style="font-size:9px; color:#555;">
+                        <div style="font-weight:bold; margin-bottom:4px;">Notes</div>
+                        <div t-if="o.narration" t-field="o.narration"/>
+                        <div t-else="" style="color:#e06a1f;">
+                            This is an electronically generated document and does not require signature.
+                        </div>
+                    </div>
+
+                </div>
+            </t>
+            <t t-else="">
+                <div class="page">
+                    <p>This report is only intended for Customer Credit Notes.</p>
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

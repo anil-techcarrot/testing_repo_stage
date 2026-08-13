@@ -206,7 +206,7 @@
 <!--                                    <span t-field="o.notes" ></span>-->
                                     <div class="page">
                                         <h4>Terms &amp; Conditions</h4>
-                                        <p t-field="o.note" style="text-align: justify;"/>
+                                        <div t-field="o.note" style="text-align: justify;"/>
                                     </div>
                                 </t>
                             </div>

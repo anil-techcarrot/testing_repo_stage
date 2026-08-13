@@ -5,3 +5,5 @@ from . import payslip
 from . import hr_expense
 from . import hr_leave_email
 from . import hr_leave_frozen
+from . import res_company
+from . import res_config_settings

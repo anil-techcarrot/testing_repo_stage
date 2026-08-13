@@ -1807,7 +1807,7 @@ has_work_permit and any other restricted binary fields).
                                     <i class="fa fa-info-circle me-1"></i>
                                     Profile last updated:
                                     <strong id="profileLastUpdated">
-                                        <t t-esc="employee.write_date.strftime('%d %b, %Y at %I:%M %p') if employee.write_date else 'Never'"/>
+                                        <t t-esc="profile_last_updated.strftime('%d %b, %Y at %I:%M %p') if profile_last_updated else 'Never'"/>
                                     </strong>
                                 </p>
                                 <button type="button" id="editProfileBtn" class="btn btn-outline-primary"
