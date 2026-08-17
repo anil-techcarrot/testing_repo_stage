@@ -8,7 +8,7 @@
 
     'category': 'Account',
     'version': '19.0.0.1.0',
-    'depends': ['base', 'web', 'sale_management', 'stock', 'sale_renting', 'account', 'account_accountant', 'sale',
+    'depends': ['base', 'web', 'account_followup', 'sale_management', 'stock', 'sale_renting', 'account', 'account_accountant', 'sale',
                 'techcarret_rental'],
 
     'data': [
