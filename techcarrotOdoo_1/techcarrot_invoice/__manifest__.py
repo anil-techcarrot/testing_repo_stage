@@ -8,7 +8,8 @@
 
     'category': 'Account',
     'version': '19.0.0.1.0',
-    'depends': ['base', 'web', 'sale_management', 'stock', 'sale_renting', 'account', 'account_accountant', 'sale', 'techcarret_rental'],
+    'depends': ['base', 'web', 'sale_management', 'stock', 'sale_renting', 'account', 'account_accountant', 'sale',
+                'techcarret_rental'],
 
     'data': [
         'security/ir.model.access.csv',
@@ -20,6 +21,7 @@
         'reports/credit_note_report.xml',
         'reports/followup_reports.xml',
         'data/server_action.xml',
+        'data/account_statement.xml',
         'views/res_bank_view.xml',
         # 'views/sale_order_view.xml',
         'views/account_move_view.xml',
@@ -30,7 +32,6 @@
 
     'auto_install': False,
     'installable': True,
-
 
     # 'pre_init_hook': 'pre_init_check',
 }
