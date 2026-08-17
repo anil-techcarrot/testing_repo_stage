@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="report_followup_print_all_soa_inherit"
+              inherit_id="account_followup.report_followup_print_all">
+
+        <!-- Insert our SOA header just before the existing follow-up table,
+             existing t-out="doc.get_followup_html(options)" is untouched -->
+        <xpath expr="//div[hasclass('page')]" position="before">
+            <div class="d-flex justify-content-between align-items-start mb-3" style="border-bottom: 2px solid #714B67; padding-bottom: 8px;">
+                <div>
+                    <img t-if="company.logo" t-att-src="image_data_uri(company.logo)"
+                         style="max-height:70px;"/>
+                </div>
+                <div class="text-end">
+                    <h2 style="margin-bottom:2px;">Statement of Accounts</h2>
+                    <div t-if="options.get('date')">
+                        As of <span t-esc="options['date']"/>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+
+    </template>
+
+</odoo>
