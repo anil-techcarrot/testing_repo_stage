@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>     <!-- ============================================================          1. Rename Follow-up Report to Statement of Account          ============================================================ -->
+<odoo>
+    <!-- 1. Rename Follow-up Report to Statement of Account -->
     <record id="account_reports.followup_report" model="account.report">
         <field name="name">Statement of Accounts</field>
-    </record>     <!-- ============================================================          2. Add Company Logo to Statement of Account PDF          Odoo 19 Enterprise:          Actual report template:          account_followup.report_followup_print_all          ============================================================ -->
-<!--    <template id="statement_account_logo" inherit_id="account_followup.report_followup_print_all">-->
-<!--        <xpath expr="//div[contains(@class, 'page')]" position="inside">-->
-<!--            <div t-if="company.sudo().logo" style="width: 100%; text-align: center; margin-bottom: 15px;">-->
-<!--                <img t-att-src="image_data_uri(company.sudo().logo)" style="max-height: 70px; max-width: 250px;"-->
-<!--                     alt="Company Logo"/>-->
-<!--            </div>-->
-<!--        </xpath>-->
-<!--    </template>-->
+    </record>
+
+    <!-- 2. Add Company Logo to Statement of Account PDF -->
+    <template id="statement_account_logo" inherit_id="account_followup.report_followup_print_all">
+        <xpath expr="//div[contains(@class, 'page')]" position="inside">
+            <div t-if="company.sudo().logo" style="width: 100%; text-align: center; margin-bottom: 15px;">
+                <img t-att-src="image_data_uri(company.sudo().logo)" style="max-height: 70px; max-width: 250px;"
+                     alt="Company Logo"/>
+            </div>
+        </xpath>
+    </template>
 </odoo>
