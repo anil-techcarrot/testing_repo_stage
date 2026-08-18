@@ -7,7 +7,7 @@
                 <div class="col-12 text-start">
                     <img t-if="env.company.sudo().logo"
                          t-att-src="image_data_uri(env.company.sudo().logo)"
-                         style="max-height: 70px; max-width: 250px;" alt="Company Logo"/>
+                         style="max-height: 70px; max-width: 250px; margin:bottom" alt="Company Logo"/>
                 </div>
             </div>
         </xpath>
