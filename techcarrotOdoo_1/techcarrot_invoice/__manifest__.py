@@ -19,7 +19,7 @@
         'reports/invoice_ir_actions.xml',
         'reports/invoice_inherit.xml',
         'reports/credit_note_report.xml',
-        # 'reports/followup_reports.xml',
+        'reports/followup_reports.xml',
         'data/server_action.xml',
         # 'data/account_statement.xml',
         'views/res_bank_view.xml',
