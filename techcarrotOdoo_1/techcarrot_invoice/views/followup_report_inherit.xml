@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="template_followup_report_logo" inherit_id="account_followup.template_followup_report">
+        <xpath expr="//div[@class='o_account_reports_header']" position="before">
+            <div class="print_only" style="text-align:center; margin-bottom: 10px;">
+                <img t-if="doc.env.company.logo"
+                     t-att-src="'data:image/png;base64,%s' % doc.env.company.logo.decode('utf-8')"
+                     style="max-height: 80px;" alt="Company Logo"/>
+            </div>
+        </xpath>
+    </template>
+</odoo>
