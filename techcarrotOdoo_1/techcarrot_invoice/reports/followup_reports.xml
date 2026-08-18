@@ -4,10 +4,9 @@
     <template id="statement_account_logo" inherit_id="account_reports.pdf_export_main_customer_report">
         <xpath expr="//div[hasclass('row')][1]" position="before">
             <div class="row mb-2">
-                <div class="col-12 text-start">
-                    <img t-if="env.company.sudo().logo"
-                         t-att-src="image_data_uri(env.company.sudo().logo)"
-                         style="max-height: 70px; max-width: 250px; margin:bottom" alt="Company Logo"/>
+                <div class="col-12 text-start mb-1">
+                    <img t-if="env.company.sudo().logo" t-att-src="image_data_uri(env.company.sudo().logo)"
+                         style="max-height: 45px; max-width: 150px;" alt="Company Logo"/>
                 </div>
             </div>
         </xpath>
