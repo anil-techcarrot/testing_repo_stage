@@ -1,6 +1,6 @@
 {
     'name': 'IT Helpdesk',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.1.0',
     'category': 'Services/Helpdesk',
     'summary': 'IT Support Ticketing System',
     'author': 'TechCarrot FZ-LLC',
