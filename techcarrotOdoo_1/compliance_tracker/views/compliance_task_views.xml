@@ -47,6 +47,7 @@
                                 <field name="compliance_project_id"/>
                                 <field name="location_id"/>
                                 <field name="manager_id"/>
+                                <field name="remarks"/>
                             </group>
 
                             <group>

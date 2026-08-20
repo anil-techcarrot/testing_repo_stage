@@ -18,12 +18,17 @@
                         .text-right {
                             text-align: end;
                         }
+                        .o_report_logo_large {
+                            height: 80px;
+                            width: 320px;
+                            object-fit: contain;
+                        }
                     </style>
                     <div class="page" style="height: 100vh;display: flex;">
                         <div class="row mb-4" style="margin: 0; padding: 0;">
                             <div class="col-3" name="logo">
                                 <div style="padding-top: 60px">
-                                    <img t-if="o.company_id.logo" class="o_company_logo_small" t-att-src="image_data_uri(o.company_id.logo)" alt="Logo"/>
+                                    <img t-if="o.company_id.logo" class="o_report_logo_large" t-att-src="image_data_uri(o.company_id.logo)" alt="Logo"/>
                                 </div>
                             </div>
                             <div class="col-5" name="div_billing_address" >

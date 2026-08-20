@@ -109,6 +109,26 @@ class ComplianceTask(models.Model):
         default=lambda self: self._get_default_stage_id()
     )
 
+    compliance_month = fields.Selection(
+        [
+            ('january', 'January'),
+            ('february', 'February'),
+            ('march', 'March'),
+            ('april', 'April'),
+            ('may', 'May'),
+            ('june', 'June'),
+            ('july', 'July'),
+            ('august', 'August'),
+            ('september', 'September'),
+            ('october', 'October'),
+            ('november', 'November'),
+            ('december', 'December'),
+        ],
+        string="Compliance Month",
+        required=True 
+    )
+    remarks=fields.Text(string="Remarks")
+
     kanban_state = fields.Selection([
         ('normal', 'In Progress'),
         ('done', 'Ready'),
@@ -117,10 +137,6 @@ class ComplianceTask(models.Model):
 
     color = fields.Integer(string='Color Index')
     attachment_count = fields.Integer(compute='_compute_attachment_count', string='Attachment Count')
-    compliance_month = fields.Selection(
-        [('january', 'January'), ('february', 'February'), ('march', 'March'), ('april', 'April'), ('may', 'May'),
-         ('june', 'June'), ('july', 'July'), ('august', 'August'), ('september', 'September'), ('october', 'October'),
-         ('november', 'November'), ('december', 'December'), ], string="Compliance Month", )
 
     # Kanban Helpers
     def _read_group_stage_ids(self, stages=None, domain=None, order=None):

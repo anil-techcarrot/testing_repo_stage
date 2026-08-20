@@ -27,12 +27,58 @@
                         h3 {
                             font-size: 22px !important;
                         }
+
+
+                            strong,b {
+                                font-weight: bold !important;
+                                font-size:35px;
+                            }
+
+                            .page .h6-fs {
+                                font-size: 22px !important;
+                                font-weight: bold !important;
+                            }
+
+                            .page ol,
+                            .page ul {
+                                margin-left: 25px !important;
+                                padding-left: 25px !important;
+                            }
+
+                            .page li {
+                                margin-bottom: 6px;
+                            }
+
+                            .page .o-paragraph {
+                                margin-bottom: 6px;
+                            }
+                        .o-paragraph strong,
+.o-paragraph b,
+strong,
+b {
+    font-weight: 900 !important;
+}
+
+.h6-fs {
+    font-size: 22px !important;
+    font-weight: 900 !important;
+}
+
+.o-paragraph {
+    display: block;
+}
+
+.o_report_logo_large {
+    height: 80px;
+    width: 320px;
+    object-fit: contain;
+}
                     </style>
                     <div class="page">
                         <div class="row mb-4">
                             <div class="col-6" name="logo">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <img t-if="o.company_id.logo" class="o_company_logo_small" t-att-src="image_data_uri(o.company_id.logo)" alt="Logo"/>
+                                    <img t-if="o.company_id.logo" class="o_report_logo_large" t-att-src="image_data_uri(o.company_id.logo)" alt="Logo"/>
                                 </div>
                                 <div class="no-border" style="font-size:24px;"><b><t t-esc="o.company_id.name"/></b></div>
                                 <div class="no-border" ><t t-esc="o.company_id.street"/>, <t t-esc="o.company_id.street2"/></div>

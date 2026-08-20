@@ -2478,7 +2478,7 @@ class PortalEmployee(http.Controller):
             leave_balance_days = round(sum(
                 lt.virtual_remaining_leaves
                 for lt in _leave_types
-                if lt.max_leaves > 0
+                if lt.max_leaves > 0 and 'annual' in lt.name.lower()
             ), 1)
         except Exception:
             pass
@@ -3705,9 +3705,9 @@ class PortalEmployee(http.Controller):
         if priority_filter:
             domain.append(('priority', '=', priority_filter))
 
-        company_filter = kwargs.get('company')
-        if company_filter:
-            domain.append(('partner_id.parent_id.name', 'ilike', company_filter))
+        customer_filter = kwargs.get('customer')
+        if customer_filter:
+            domain.append(('partner_id.name', 'ilike', customer_filter))
 
         # Date range filters
         date_from = kwargs.get('date_from')
@@ -3884,7 +3884,7 @@ class PortalEmployee(http.Controller):
                 'practice': practice_filter or '',
                 'industry': industry_filter or '',
                 'priority': priority_filter or '',
-                'company': company_filter or '',
+                'customer': customer_filter or '',
                 'date_from': date_from or '',
                 'date_to': date_to or '',
                 'activity_due_from': activity_due_from or '',
@@ -4216,6 +4216,14 @@ class PortalEmployee(http.Controller):
         user = request.env.user
         if lead and lead.user_id.id == user.id:
             lead.sudo().unlink()
+        return request.redirect('/my/employee/crm')
+
+    @http.route('/my/employee/crm/duplicate/<int:lead_id>', type='http', auth='user', website=True, methods=['POST'])
+    def portal_employee_crm_duplicate(self, lead_id, **post):
+        lead = request.env['crm.lead'].sudo().browse(lead_id)
+        user = request.env.user
+        if lead and lead.user_id.id == user.id:
+            lead.sudo().copy({'name': lead.name + ' (Copy)'})
         return request.redirect('/my/employee/crm')
 
     @http.route('/my/contacts', type='http', auth='user', website=True)

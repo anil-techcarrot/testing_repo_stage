@@ -548,8 +548,7 @@ class Rentals(models.Model):
                 'move_type': 'out_invoice',
                 'partner_id': rental_obj.rental_sale_id.partner_id.id,
                 'invoice_date': invoice_date or fields.Date.today(),
-                # 'ref': rental_obj.rental_sale_id.name or '',
-                'ref': rental_obj.rental_sale_id.client_order_ref or "",
+                'ref': rental_obj.rental_sale_id.client_order_ref or "",                
                 'narration': rental_obj.rental_sale_id.note,
                 'source_id': rental_obj.rental_sale_id.source_id.id,
                 'team_id': rental_obj.rental_sale_id.team_id.id,
@@ -576,26 +575,6 @@ class Rentals(models.Model):
                             inv_ids=[inv_line.id]+so_line.invoice_lines.ids
                             so_line.invoice_lines = [(6, 0, inv_ids)]
                 return inv_obj
-
-    def sync_client_order_ref_to_invoices(self):
-
-        rental_orders = self.filtered(lambda so: so.is_rental_order and so.client_order_ref)
-
-        for order in rental_orders:
-            invoices = order.invoice_ids.filtered(lambda inv: inv.move_type in ('out_invoice'))
-
-            for invoice in invoices:
-                current_ref = invoice.ref or ''
-
-                if not current_ref or current_ref.startswith('S'):
-                    invoice.ref = order.client_order_ref
-
-    def run_sync_for_all_rental_orders(self):
-        orders = self.env['sale.order'].search([
-            ('is_rental_order', '=', True),
-            ('client_order_ref', '!=', False),
-        ])
-        orders.sync_client_order_ref_to_invoices()
 
     def _cron_create_rental_month_invoices(self, rental_invoice=''):
         """ Generate invoice """
@@ -713,6 +692,22 @@ class Rentals(models.Model):
                     r_invoice.sale_state='draft'
                     r_invoice.state='draft'
         return res
+
+    def sync_client_order_ref_to_invoices(self):
+        rental_orders = self.filtered(lambda so: so.is_rental_order and so.client_order_ref)
+        for order in rental_orders:
+            invoices = order.invoice_ids.filtered(lambda inv: inv.move_type in ('out_invoice'))
+            for invoice in invoices:
+                current_ref = invoice.ref or ''
+                if not current_ref or current_ref.startswith('S'):
+                    invoice.ref = order.client_order_ref
+     
+    def run_sync_for_all_rental_orders(self):
+        orders = self.env['sale.order'].search([
+            ('is_rental_order', '=', True),
+            ('client_order_ref', '!=', False),
+        ])
+        orders.sync_client_order_ref_to_invoices()
 
     # def _prepare_analytic_account_data(self, prefix=None):
     #     """ Prepare SO analytic account creation values.

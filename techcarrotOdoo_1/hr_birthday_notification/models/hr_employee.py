@@ -5,7 +5,7 @@ import logging
 import os
 import urllib.request
 
-from odoo import models
+from odoo import fields, models
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 
 _logger = logging.getLogger(__name__)
@@ -17,6 +17,14 @@ BACKGROUND_URL = "https://lh3.googleusercontent.com/d/1R_DcmIU6OefuaSdNNS0GOQC60
 
 class HrEmployee(models.Model):
     _inherit = 'hr.employee'
+
+    last_birthday_notification_date = fields.Date(
+        string='Last Birthday Notification Sent',
+        help="Real calendar date the birthday card email was last sent for "
+             "this employee. Prevents sending more than one birthday email "
+             "per day even if the notification is triggered multiple times "
+             "(manual re-runs, repeated test calls, etc.).",
+    )
 
     def _cron_send_birthday_notifications(self):
         today = datetime.date.today()
@@ -53,13 +61,15 @@ class HrEmployee(models.Model):
 
         if self.image_1920:
             photo = Image.open(io.BytesIO(base64.b64decode(self.image_1920))).convert('RGBA')
-            # object-position: top -> anchor the crop to the top of the source photo
-            # instead of centering it.
-            photo = ImageOps.fit(photo, (560, 650), method=Image.LANCZOS, centering=(0.5, 0.0))
+            # Sized/positioned to fill the dashed placeholder box baked into the
+            # background template (measured directly off a rendered card, since
+            # the original 560x650 @ (395, 770) box was slightly smaller than
+            # the template's actual placeholder).
+            photo = ImageOps.fit(photo, (590, 685), method=Image.LANCZOS, centering=(0.5, 0.0))
 
-            mask = Image.new('L', (560, 650), 0)
-            ImageDraw.Draw(mask).rounded_rectangle([0, 0, 560, 650], radius=10, fill=255)
-            background.paste(photo, (395, 770), mask)
+            mask = Image.new('L', (590, 685), 0)
+            ImageDraw.Draw(mask).rounded_rectangle([0, 0, 590, 685], radius=10, fill=255)
+            background.paste(photo, (380, 755), mask)
 
         bundled_font = os.path.join(
             os.path.dirname(__file__), '..', 'static', 'fonts', 'DejaVuSans-Bold.ttf'
@@ -106,6 +116,14 @@ class HrEmployee(models.Model):
     def _send_birthday_card_email(self):
         self.ensure_one()
 
+        today = datetime.date.today()
+        if self.last_birthday_notification_date == today:
+            _logger.info(
+                "Birthday email already sent today for %s; skipping duplicate.",
+                self.name,
+            )
+            return
+
         hr_emails = self._get_hr_reviewer_emails()
         if not hr_emails:
             return
@@ -142,3 +160,4 @@ class HrEmployee(models.Model):
             'attachment_ids': [(6, 0, [attachment.id])],
         })
         mail.send()
+        self.sudo().write({'last_birthday_notification_date': today})

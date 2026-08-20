@@ -1,4 +1,5 @@
 from odoo import models, fields
+from datetime import timedelta
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -8,6 +9,36 @@ class HrLeaveESS(models.Model):
     _inherit = 'hr.leave'
 
     state = fields.Selection(tracking=False)
+
+    def _get_durations(self, check_leave_type=True, resource_calendar=None):
+        """Exclude Saturdays and Sundays from leave day count for ALL leave types."""
+        result = super()._get_durations(
+            check_leave_type=check_leave_type,
+            resource_calendar=resource_calendar,
+        )
+
+        for leave in self:
+            if leave.id not in result:
+                continue
+            days, hours = result[leave.id]
+            if not leave.date_from or not leave.date_to or not days:
+                continue
+
+            weekend_days = 0
+            cur = leave.date_from.date()
+            end = leave.date_to.date()
+            while cur <= end:
+                if cur.weekday() >= 5:
+                    weekend_days += 1
+                cur += timedelta(days=1)
+
+            if weekend_days:
+                new_days = days - weekend_days
+                if new_days < 0:
+                    new_days = 0
+                result[leave.id] = (new_days, hours)
+
+        return result
 
     def _track_subtype(self, init_values):
         return False

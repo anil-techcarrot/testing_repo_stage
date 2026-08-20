@@ -399,7 +399,7 @@
                     </div>
                     <div class="card-body p-4">
 
-                        <t t-if="not line_manager">
+                       <t t-if="approval_required and not line_manager">
                             <div class="alert alert-warning mb-3" role="alert">
                                 <i class="fa fa-exclamation-triangle me-2"></i>
                                 <strong>No line manager assigned.</strong>
@@ -625,14 +625,14 @@
                                     <button type="reset" class="btn btn-outline-secondary px-4 fw-bold">
                                         <i class="fa fa-refresh me-1"></i>Reset
                                     </button>
-                                    <t t-if="line_manager">
-                                        <button type="submit" class="btn lv-submit-btn">
+                                    <t t-if="approval_required and not line_manager">
+                                        <button type="button" class="btn lv-submit-btn" disabled="disabled"
+                                                title="Cannot submit: no line manager assigned">
                                             <i class="fa fa-paper-plane me-2"></i>Submit Request
                                         </button>
                                     </t>
                                     <t t-else="">
-                                        <button type="button" class="btn lv-submit-btn" disabled="disabled"
-                                                title="Cannot submit: no line manager assigned">
+                                        <button type="submit" class="btn lv-submit-btn">
                                             <i class="fa fa-paper-plane me-2"></i>Submit Request
                                         </button>
                                     </t>
@@ -826,7 +826,7 @@
                                 <i class="fa fa-exclamation-triangle fa-2x"></i>
                                 <div>
                                     <p class="mb-0 fw-bold">No Line Manager Assigned</p>
-                                    <small class="text-muted">Contact your HR administrator to assign a line manager.
+                                    <small class="text-muted">No line manager is currently assigned to your profile. This will not affect your ability to apply for leave.
                                     </small>
                                 </div>
                             </div>
@@ -889,16 +889,17 @@
 
 
                 function countWorkdays(from, to){
-                var count = 0;
-                var cur = new Date(from); cur.setHours(0,0,0,0);
-                var end = new Date(to); end.setHours(0,0,0,0);
-                while(cur &lt;= end){
-                var w = cur.getDay();
-                if(w !== 0 &amp;&amp; w !== 6) count++;
-                cur.setDate(cur.getDate() + 1);
-                }
-                return count;
-                }
+        var count = 0;
+        var cur = new Date(from); cur.setHours(0,0,0,0);
+        var end = new Date(to); end.setHours(0,0,0,0);
+        while(cur &lt;= end){
+        var w = cur.getDay();
+        var ymd = toStr(cur);
+        if(w !== 0 &amp;&amp; w !== 6 &amp;&amp; !holidayMap[ymd]) count++;
+        cur.setDate(cur.getDate() + 1);
+        }
+        return count;
+        }
 
                 function toStr(dt){
                 var y = dt.getFullYear();
@@ -1065,17 +1066,17 @@
 
                 var resetBtn = document.querySelector('button[type="reset"]');
                 if(resetBtn){
-                    resetBtn.addEventListener('click', function(){
-                        setTimeout(function(){
-                            if(d){ d.textContent = '—'; d.style.color = ''; }
-                            if(overlapRow) overlapRow.style.display = 'none';
-                            if(pastRow) pastRow.style.display = 'none';
-                            if(weekendNote) weekendNote.style.display = 'none';
-                            if(holidayNote) holidayNote.style.display = 'none';
-                            if(window.__essBackupRefresh) window.__essBackupRefresh();
-                            if(submitBtn){ submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
-                        }, 0);
-                    });
+                resetBtn.addEventListener('click', function(){
+                setTimeout(function(){
+                if(d){ d.textContent = '—'; d.style.color = ''; }
+                if(overlapRow) overlapRow.style.display = 'none';
+                if(pastRow) pastRow.style.display = 'none';
+                if(weekendNote) weekendNote.style.display = 'none';
+                if(holidayNote) holidayNote.style.display = 'none';
+                if(window.__essBackupRefresh) window.__essBackupRefresh();
+                if(submitBtn){ submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+                }, 0);
+                });
                 }
 
 
@@ -1106,6 +1107,26 @@
                 if(typeSel){
                 typeSel.addEventListener('change', updateDocRequirement);
                 updateDocRequirement();
+                }
+
+                var fileInputEl = document.getElementById('leave_attachment');
+                if(fileInputEl){
+                    fileInputEl.addEventListener('change', function(){
+                        var file = fileInputEl.files &amp;&amp; fileInputEl.files[0];
+                        if(!file) return;
+                        var allowed = ['pdf','doc','docx','png','jpg','jpeg','xlsx','txt'];
+                        var ext = file.name.split('.').pop().toLowerCase();
+                        if(allowed.indexOf(ext) === -1){
+                            alert('Invalid file type. Allowed: PDF, DOC, DOCX, PNG, JPG, JPEG, XLSX, TXT.');
+                            fileInputEl.value = '';
+                            return;
+                        }
+                        if(file.size > 10 * 1024 * 1024){
+                            alert('File is too large. Maximum allowed size is 10MB.');
+                            fileInputEl.value = '';
+                            return;
+                        }
+                    });
                 }
 
                 })();
@@ -1607,12 +1628,12 @@
                 <p class="text-muted mb-4">Leave requests from your team.</p>
 
                 <t t-if="success_message">
-                    <div class="alert alert-success">
+                    <div id="approval-success-alert" class="alert alert-success">
                         <t t-esc="success_message"/>
                     </div>
                 </t>
                 <t t-if="error">
-                    <div class="alert alert-danger">
+                    <div id="approval-error-alert" class="alert alert-danger">
                         <t t-esc="error_message or 'An error occurred.'"/>
                     </div>
                 </t>
@@ -1718,6 +1739,30 @@
                         <h5 class="text-muted">No requests in this view</h5>
                     </div>
                 </t>
+
+                <script type="text/javascript">
+                    (function(){
+                    if (window.history &amp;&amp; window.history.replaceState) {
+                    var url = new URL(window.location.href);
+                    var hadFlag = url.searchParams.has('success')
+                    || url.searchParams.has('error')
+                    || url.searchParams.has('error_msg');
+                    if (hadFlag) {
+                    url.searchParams.delete('success');
+                    url.searchParams.delete('error');
+                    url.searchParams.delete('error_msg');
+                    window.history.replaceState({}, document.title,
+                    url.pathname + url.search + url.hash);
+                    }
+                    }
+                    setTimeout(function(){
+                    var s = document.getElementById('approval-success-alert');
+                    var e = document.getElementById('approval-error-alert');
+                    if(s) s.style.display = 'none';
+                    if(e) e.style.display = 'none';
+                    }, 5000);
+                    })();
+                </script>
 
             </div>
 

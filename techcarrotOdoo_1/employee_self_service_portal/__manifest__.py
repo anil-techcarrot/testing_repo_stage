@@ -7,7 +7,7 @@
     "author": "Lovaraju Mylapalli",
     "website": "https://www.mlr.com",
     "description": """
-        Employee Self Service Portal MLR
+        Employee Self Service Portal
         =================================
         This module provides a portal for employees to manage their personal information, attendance, and other HR-related tasks. this is techcarrot customized
     """,
@@ -25,7 +25,6 @@
         "views/portal_layout.xml",
         "views/portal_ess_dashboard.xml",
         "views/portal_ess_dashboard_enhanced.xml",
-        "views/portal_contacts.xml",
         "views/Employee_details/portal_employee_templates.xml",
         "views/Employee_details/portal_attendance_templates.xml",
         "views/Employee_details/employee_form_view.xml",
@@ -38,6 +37,7 @@
         "views/Employee_details/portal_employee_profile_experience.xml",
         "views/Employee_details/portal_employee_profile_certification.xml",
         "views/Employee_details/portal_employee_profile_bank.xml",
+
         "views/Employee_details/portal_employee_crm.xml",
         "views/Employee_details/portal_employee_crm_enhanced.xml",
         "views/Employee_details/portal_employee_crm_create.xml",
@@ -54,6 +54,7 @@
         "views/portal_ess_leave_management.xml",
         'views/res_config_settings_views.xml', 
         'views/hr_leave_frozen_views.xml',
+        'views/portal_contacts.xml',
 
         # "views/Employee_details/inherit_template.xml",
         # "views/Employee_details/portal_employee_profile_payroll.xml",

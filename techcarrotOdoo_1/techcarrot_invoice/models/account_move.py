@@ -10,21 +10,20 @@ class AccountMove(models.Model):
     cust_inv_date = fields.Date('Customer INV Date')
     project_id = fields.Many2one('project.project', string='Project')
 
-
-    def anil(self):
+    def vat_report(self):
         tax_id = self.env['account.tax'].search([
             ('name', '=', '5%  Tax Included'),
             ('type_tax_use', '=', 'purchase'),
         ], limit=1).id
 
         old_base_tag = self.env['account.account.tag'].search([('name', '=', '1(b)B'), ('applicability', '=', 'taxes')],
-                                                         limit=1).id
+                                                              limit=1).id
         old_tax_tag = self.env['account.account.tag'].search([('name', '=', '1(b)T'), ('applicability', '=', 'taxes')],
-                                                        limit=1).id
+                                                             limit=1).id
         new_base_tag = self.env['account.account.tag'].search([('name', '=', '9B'), ('applicability', '=', 'taxes')],
-                                                         limit=1).id
+                                                              limit=1).id
         new_tax_tag = self.env['account.account.tag'].search([('name', '=', '9T'), ('applicability', '=', 'taxes')],
-                                                        limit=1).id
+                                                             limit=1).id
 
         base_lines = self.env['account.move.line'].search([
             ('tax_ids', 'in', tax_id),
@@ -39,8 +38,6 @@ class AccountMove(models.Model):
 
         base_lines.write({'tax_tag_ids': [(3, old_base_tag), (4, new_base_tag)]})
         tax_lines.write({'tax_tag_ids': [(3, old_tax_tag), (4, new_tax_tag)]})
-
-
     
     @api.onchange('project_id')
     def _onchange_project_id(self):

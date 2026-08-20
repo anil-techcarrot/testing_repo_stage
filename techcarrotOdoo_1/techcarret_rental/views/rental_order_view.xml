@@ -529,4 +529,26 @@
         </field>
     </record>
 
+    <record id="action_export_invoice_xlsx_server" model="ir.actions.server">
+        <field name="name">Export Invoices to XLSX</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <!-- Trivial one-liner: passes safe_eval (no import/lambda/closures).
+             All real logic lives in the unrestricted Python method below. -->
+        <field name="code">action = records.action_export_invoice_xlsx()</field>
+    </record>
+
+    <record id="view_order_form_validity_always_visible" model="ir.ui.view">
+        <field name="name">sale.order.form.validity.visible</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+            <field name="validity_date" position="attributes">
+            <attribute name="invisible">0</attribute>
+        </field>
+        </field>
+    </record>
+
 </odoo>

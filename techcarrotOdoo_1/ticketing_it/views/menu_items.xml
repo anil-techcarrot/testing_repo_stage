@@ -68,7 +68,7 @@
 
     <!-- NEW: Action for HR Manager to view tickets pending HR approval -->
     <record id="action_it_ticket_pending_hr_approval" model="ir.actions.act_window">
-        <field name="name">Pending HR Approval</field>
+        <field name="name">Pending My Approval</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[('state','=','hr_approval')]</field>
@@ -103,7 +103,7 @@
 
     <!-- Menu for IT Manager to view tickets pending IT approval -->
     <menuitem id="menu_it_tickets_pending_it"
-              name="Pending IT Approval"
+              name="Pending My Approval"
               parent="menu_it_tickets_root"
               action="action_it_ticket_pending_it"
               sequence="30"
@@ -111,7 +111,7 @@
 
     <!-- NEW: Menu for HR Manager to view tickets pending HR approval -->
     <menuitem id="menu_it_tickets_pending_hr"
-              name="Pending HR Approval"
+              name="Pending My Approval"
               parent="menu_it_tickets_root"
               action="action_it_ticket_pending_hr_approval"
               sequence="25"

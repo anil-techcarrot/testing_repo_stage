@@ -1,6 +1,6 @@
 {
     'name': 'IT Helpdesk',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.1.0',
     'category': 'Services/Helpdesk',
     'summary': 'IT Support Ticketing System',
     'author': 'TechCarrot FZ-LLC',
@@ -12,8 +12,8 @@
         'data/email_templates.xml',
         'data/ir_cron.xml',
         'data/automated_actions.xml',
-        # 'data/ticket_categories_and_types.xml',
-        # 'data/ticket_type.xml',
+        'data/ticket_categories_and_types.xml',
+        'data/ticket_type.xml',
         'views/portal_ticket_detail.xml',
         'views/portal_it_ticket_approvals.xml',
         'views/portal_my_home_link.xml',
@@ -26,7 +26,6 @@
         'views/ticket_workflow_config_view.xml',
         'views/it_dashboard.xml',
         'views/menu_items.xml',
-        'views/journal_closing.xml',
         'wizards/reject_wizard_views.xml',
         'wizards/approve_wizard.xml',
         'wizards/it_reminder_config_wizard.xml',
@@ -38,5 +37,4 @@
     'license': 'LGPL-3',
     'post_load': 'post_load',
     'post_migrate': 'post_migrate',
-
 }

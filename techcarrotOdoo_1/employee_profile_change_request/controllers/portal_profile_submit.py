@@ -601,11 +601,6 @@ class EmployeePortalProfileSubmit(http.Controller):
                 continue
 
         pending_cert_changes = _build_pending_cert_changes(all_pending_pcrs, request.env)
-        last_approved_pcr = request.env['hr.profile.change.request'].sudo().search([
-            ('employee_id', '=', employee.id),
-            ('state', '=', 'approved'),
-        ], order='write_date desc', limit=1)
-        profile_last_updated = latest_personal_pcr.create_date if latest_personal_pcr else employee.create_date
 
         return request.render(
             'employee_self_service_portal.portal_employee_profile_personal',
@@ -627,7 +622,6 @@ class EmployeePortalProfileSubmit(http.Controller):
                 'pending_resume_change': pending_resume_change,
                 'pending_cert_changes':  pending_cert_changes,
                 'cert_attachments_map':  cert_attachments_map,
-                'profile_last_updated': profile_last_updated,
             },
         )
 
