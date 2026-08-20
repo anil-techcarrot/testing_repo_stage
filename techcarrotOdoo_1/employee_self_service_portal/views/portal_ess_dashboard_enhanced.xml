@@ -696,110 +696,110 @@
 
 
                             <!-- IT Tickets Card - ADD after Payslips card in Module Cards section -->
-<!--                            <div class="col-md-4">-->
-<!--                                <div class="module-card card border-0 shadow-sm h-100">-->
-<!--                                    <div class="card-body d-flex flex-column justify-content-between">-->
-<!--                                        <div class="d-flex align-items-center mb-3">-->
-<!--                                            <div class="icon-circle bg-danger bg-opacity-10 me-3">-->
-<!--                                                <i class="fa fa-ticket fa-lg text-danger"></i>-->
-<!--                                            </div>-->
-<!--                                            <div>-->
-<!--                                                <h6 class="mb-1">IT Support</h6>-->
-<!--                                                <p class="text-muted mb-0 small">Submit and track IT tickets</p>-->
-<!--                                            </div>-->
-<!--                                        </div>-->
+                            <div class="col-md-4">
+                                <div class="module-card card border-0 shadow-sm h-100">
+                                    <div class="card-body d-flex flex-column justify-content-between">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="icon-circle bg-danger bg-opacity-10 me-3">
+                                                <i class="fa fa-ticket fa-lg text-danger"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1">IT Support</h6>
+                                                <p class="text-muted mb-0 small">Submit and track IT tickets</p>
+                                            </div>
+                                        </div>
 
-<!--                                        &lt;!&ndash; Ticket Stats &ndash;&gt;-->
-<!--                                        <div class="ticket-summary mb-3">-->
-<!--                                            <div class="row text-center g-2">-->
-<!--                                                <div class="col-6">-->
-<!--                                                    <div class="metric-box rounded-3 py-3"-->
-<!--                                                         style="background:linear-gradient(90deg,#1B5E3A,#E58E26);">-->
-<!--                                                        <h4 class="text-white fw-bold mb-0"-->
-<!--                                                            t-esc="it_tickets_count or 0"/>-->
-<!--                                                        <small class="text-white" style="opacity:0.9;">Total</small>-->
-<!--                                                    </div>-->
-<!--                                                </div>-->
-<!--                                                <div class="col-6">-->
-<!--                                                    <div class="metric-box rounded-3 py-3"-->
-<!--                                                         style="background:linear-gradient(90deg,#E58E26,#C0392B);">-->
-<!--                                                        <h4 class="text-white fw-bold mb-0"-->
-<!--                                                            t-esc="it_tickets_pending or 0"/>-->
-<!--                                                        <small class="text-white" style="opacity:0.9;">Pending</small>-->
-<!--                                                    </div>-->
-<!--                                                </div>-->
-<!--                                            </div>-->
-<!--                                        </div>-->
+                                        <!-- Ticket Stats -->
+                                        <div class="ticket-summary mb-3">
+                                            <div class="row text-center g-2">
+                                                <div class="col-6">
+                                                    <div class="metric-box rounded-3 py-3"
+                                                         style="background:linear-gradient(90deg,#1B5E3A,#E58E26);">
+                                                        <h4 class="text-white fw-bold mb-0"
+                                                            t-esc="it_tickets_count or 0"/>
+                                                        <small class="text-white" style="opacity:0.9;">Total</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <div class="metric-box rounded-3 py-3"
+                                                         style="background:linear-gradient(90deg,#E58E26,#C0392B);">
+                                                        <h4 class="text-white fw-bold mb-0"
+                                                            t-esc="it_tickets_pending or 0"/>
+                                                        <small class="text-white" style="opacity:0.9;">Pending</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
 
-<!--                                        &lt;!&ndash; Recent Tickets Preview &ndash;&gt;-->
-<!--                                        <t t-if="it_tickets_recent">-->
-<!--                                            <div class="mb-3">-->
-<!--                                                <t t-foreach="it_tickets_recent[:2]" t-as="ticket">-->
-<!--                                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">-->
-<!--                                                        <small class="text-truncate me-2" style="max-width:120px;">-->
-<!--                                                            <t t-esc="ticket.name"/>-->
-<!--                                                            - -->
-<!--                                                            <t t-esc="ticket.subject"/>-->
-<!--                                                        </small>-->
-<!--                                                        <span t-attf-class="badge badge-{{-->
-<!--                                'success' if ticket.state == 'done' else-->
-<!--                                'danger' if ticket.state == 'rejected' else-->
-<!--                                'warning' if ticket.state in ['manager_approval','it_approval'] else-->
-<!--                                'secondary'-->
-<!--                            }} badge-sm" style="font-size:0.65rem;">-->
-<!--                                                            <t t-esc="dict(ticket._fields['state'].selection).get(ticket.state)"/>-->
-<!--                                                        </span>-->
-<!--                                                    </div>-->
-<!--                                                </t>-->
-<!--                                            </div>-->
-<!--                                        </t>-->
+                                        <!-- Recent Tickets Preview -->
+                                        <t t-if="it_tickets_recent">
+                                            <div class="mb-3">
+                                                <t t-foreach="it_tickets_recent[:2]" t-as="ticket">
+                                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                                        <small class="text-truncate me-2" style="max-width:120px;">
+                                                            <t t-esc="ticket.name"/>
+                                                            -
+                                                            <t t-esc="ticket.subject"/>
+                                                        </small>
+                                                        <span t-attf-class="badge badge-{{
+                                'success' if ticket.state == 'done' else
+                                'danger' if ticket.state == 'rejected' else
+                                'warning' if ticket.state in ['manager_approval','it_approval'] else
+                                'secondary'
+                            }} badge-sm" style="font-size:0.65rem;">
+                                                            <t t-esc="dict(ticket._fields['state'].selection).get(ticket.state)"/>
+                                                        </span>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </t>
 
-<!--                                        &lt;!&ndash; Action Buttons &ndash;&gt;-->
-<!--                                        <div class="d-grid gap-2">-->
-<!--                                            <a href="/my/ess/tickets/new" class="btn btn-danger btn-sm">-->
-<!--                                                <i class="fa fa-plus me-1"></i>-->
-<!--                                                Create New Ticket-->
-<!--                                            </a>-->
-<!--                                            <a href="/my/tickets" class="btn btn-outline-danger btn-sm">-->
-<!--                                                <i class="fa fa-list me-1"></i>-->
-<!--                                                View All Tickets-->
-<!--                                            </a>-->
-<!--                                        </div>-->
-<!--                                    </div>-->
-<!--                                </div>-->
-<!--                            </div>-->
+                                        <!-- Action Buttons -->
+                                        <div class="d-grid gap-2">
+                                            <a href="/my/ess/tickets/new" class="btn btn-danger btn-sm">
+                                                <i class="fa fa-plus me-1"></i>
+                                                Create New Ticket
+                                            </a>
+                                            <a href="/my/tickets" class="btn btn-outline-danger btn-sm">
+                                                <i class="fa fa-list me-1"></i>
+                                                View All Tickets
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-<!--                            &lt;!&ndash; IT Ticket Approvals Card - shown only to Line Managers / IT Managers-->
-<!--                                 who need to approve or reject pending tickets from the portal &ndash;&gt;-->
-<!--                            <t t-if="request.env.user.has_group('ticketing_it.group_it_manager') or-->
-<!--                                     request.env.user.has_group('ticketing_it.group_line_manager') or-->
-<!--                                     request.env['it.ticket'].sudo().search_count(-->
-<!--                                         [('line_manager_id', '=', request.env.user.id)]) > 0">-->
-<!--                                <div class="col-md-6">-->
-<!--                                    <div class="module-card card border-0 shadow-sm h-100">-->
-<!--                                        <div class="card-body">-->
-<!--                                            <div class="d-flex align-items-center mb-3">-->
-<!--                                                <div class="icon-circle bg-warning bg-opacity-10 me-3">-->
-<!--                                                    <i class="fa fa-gavel fa-lg text-warning"></i>-->
-<!--                                                </div>-->
-<!--                                                <div>-->
-<!--                                                    <h5 class="mb-1">IT Ticket Approvals</h5>-->
-<!--                                                    <p class="text-muted mb-0 small">Review pending tickets awaiting-->
-<!--                                                        your decision-->
-<!--                                                    </p>-->
-<!--                                                </div>-->
-<!--                                            </div>-->
+                            <!-- IT Ticket Approvals Card - shown only to Line Managers / IT Managers
+                                 who need to approve or reject pending tickets from the portal -->
+                            <t t-if="request.env.user.has_group('ticketing_it.group_it_manager') or
+                                     request.env.user.has_group('ticketing_it.group_line_manager') or
+                                     request.env['it.ticket'].sudo().search_count(
+                                         [('line_manager_id', '=', request.env.user.id)]) > 0">
+                                <div class="col-md-6">
+                                    <div class="module-card card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="icon-circle bg-warning bg-opacity-10 me-3">
+                                                    <i class="fa fa-gavel fa-lg text-warning"></i>
+                                                </div>
+                                                <div>
+                                                    <h5 class="mb-1">IT Ticket Approvals</h5>
+                                                    <p class="text-muted mb-0 small">Review pending tickets awaiting
+                                                        your decision
+                                                    </p>
+                                                </div>
+                                            </div>
 
-<!--                                            <div class="d-grid gap-2">-->
-<!--                                                <a href="/my/it-approvals" class="btn btn-warning btn-sm">-->
-<!--                                                    <i class="fa fa-gavel me-1"></i>-->
-<!--                                                    Go to Approvals-->
-<!--                                                </a>-->
-<!--                                            </div>-->
-<!--                                        </div>-->
-<!--                                    </div>-->
-<!--                                </div>-->
-<!--                            </t>-->
+                                            <div class="d-grid gap-2">
+                                                <a href="/my/it-approvals" class="btn btn-warning btn-sm">
+                                                    <i class="fa fa-gavel me-1"></i>
+                                                    Go to Approvals
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
                             <!-- CRM Card -->
                             <t t-if="has_crm_access">
                                 <div class="col-md-4">
