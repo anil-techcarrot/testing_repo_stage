@@ -90,3 +90,23 @@ def post_migrate(cr, registry):
         _logger.info("ticketing_it post_migrate: cleanup done")
     except Exception as e:
         _logger.warning("ticketing_it post_migrate error: %s", e)
+
+
+def post_init_hook(env):
+    """
+    Runs automatically on every install/upgrade of this module — no version
+    bump required, unlike migrations/<version>/ scripts.
+
+    The categories, sub-categories, and workflow-configs that used to be
+    hardcoded in data/ticket_categories_and_types.xml and data/ticket_type.xml
+    are no longer declared in any data file. Without this, Odoo's own
+    end-of-load cleanup treats them as orphaned and tries to delete them,
+    which fails against the it.ticket.ticket_type_id foreign key on
+    upgrade. Flipping noupdate=True tells Odoo to leave them alone.
+    """
+    env.cr.execute("""
+        UPDATE ir_model_data
+        SET noupdate = true
+        WHERE module = 'ticketing_it'
+          AND model IN ('it.ticket.category', 'it.ticket.type', 'it.ticket.workflow.config')
+    """)

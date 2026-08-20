@@ -38,4 +38,5 @@
     'license': 'LGPL-3',
     'post_load': 'post_load',
     'post_migrate': 'post_migrate',
+    'post_init_hook': 'post_init_hook',
 }
